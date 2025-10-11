@@ -1,0 +1,30 @@
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://localhost:8671/eureka/
+
+server:
+  port: 8080
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:mysql://localhost:3307/hust_assistant
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+application:
+  token-authen:
+    secret-key: "C12L10A82R19A019ACA8219DE03MYK9SDAH63"
+    bearer: "Bearer "
+    expiration: 2592000000 #60(Second) * 60(Munites) * 24(hours) * 30(days) * 1000(mili second)
+  service:
+    user-service:
+      url: http://localhost:8080
+      name: user-service

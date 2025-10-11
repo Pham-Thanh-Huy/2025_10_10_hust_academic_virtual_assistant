@@ -1,0 +1,75 @@
+version: "3.7"
+
+services:
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    image: hust_assistant/eureka-sever:${EUREKA_SERVER:-latest}
+    ports:
+      - "8671:8671"
+    container_name: eureka-server
+    networks:
+      - hust_assistant_network
+
+  cloud-gateway:
+    build:
+      context: ./cloud-gateway
+      dockerfile: Dockerfile
+    image: hust_assistant/cloud-gateway:${CLOUD_GATEWAY:-latest}
+    ports:
+      - "9898:9898"
+    container_name: cloud-gateway
+    networks:
+      - hust_assistant_network
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    image: hust_assistant/user-service:${USER_SERVICE:-latest}
+    ports:
+      - "8080:8080"
+    container_name: user-service
+    networks:
+      - hust_assistant_network
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  authen-service:
+    build:
+      context: ./authen-service
+      dockerfile: Dockerfile
+    image: hust_assistant/authen-service:${AUTHEN_SERVICE:-latest}
+    ports:
+      - "8081:8081"
+    container_name: authen-service
+    networks:
+      - hust_assistant_network
+
+  mysql:
+    image: mysql:latest
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: hust_assistant
+    volumes:
+      - hust-assistant-data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: [ "CMD", "mysql", "-h", "127.0.0.1", "-uroot", "-proot", "-e", "SELECT 1" ]
+      interval: 10s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    networks:
+      - hust_assistant_network
+
+volumes:
+  hust-assistant-data:
+    external: true
+
+networks:
+  hust_assistant_network:

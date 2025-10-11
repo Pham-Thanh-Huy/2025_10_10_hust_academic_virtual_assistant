@@ -1,0 +1,39 @@
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8671/eureka/
+
+spring:
+  application:
+    name: authen-service
+
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
+        web: DEBUG
+
+application:
+  token-authen:
+    secret-key: "C12L10A82R19A019ACA8219DE03MYK9SDAH63"
+    bearer: "Bearer "
+    expiration: 2592000000 #60(Second) * 60(Munites) * 24(hours) * 30(days) * 1000(mili second)
+  service:
+    user-service:
+      url: http://user-service:8080
+      name: user-service
+
+server:
+  port: 8081
+
+secure:
+  ignored:
+    urls:
+      - /swagger-ui/
+      - /swagger-resources/**
+      - /**/v3/api-docs
+      - /**/*.html
+      - /**/*.js
+      - /**/*.css
+      - /**/*.png
