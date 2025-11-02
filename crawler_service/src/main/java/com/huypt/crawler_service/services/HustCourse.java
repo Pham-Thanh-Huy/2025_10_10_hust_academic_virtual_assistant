@@ -27,11 +27,26 @@ public class HustCourse {
     private final String BASE_URL = "http://sis.hust.edu.vn/ModuleProgram/CourseLists.aspx";
 
     public BaseResponse<String> crawlData() {
-        WebDriver driver = SeleniumConfig.initWebDriver();
+        WebDriver driver = SeleniumConfig.initWebDriver(true);
         driver.get(BASE_URL);
         try {
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-            extractTableData(wait);
+            int index = 0;
+            while (true) {
+                // Nếu = 0 thì là trang đầu tiên nên lấy luôn table
+                if (index == 0) {
+                    extractTableData(wait);
+                }
+
+                // bắt đầu từ trang 2 tới các trang tiếp theo
+                if (index != 0) {
+                    if (paging(driver, index)) {
+                        extractTableData(wait);
+                    } else break;
+                }
+
+                index++;
+            }
 
             return BaseResponse.success("Lấy và cập nhật dữ liệu thành công");
         } catch (Exception e) {
@@ -44,71 +59,93 @@ public class HustCourse {
 
     public void extractTableData(WebDriverWait wait) {
         try {
-            WebElement table = wait.until(ExpectedConditions.presenceOfElementLocated(
-                    By.xpath("//table[@id='MainContent_gvCoursesGrid_DXMainTable']/tbody")
-            ));
+            int rowSize = wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(
+                    By.xpath("//table[@id='MainContent_gvCoursesGrid_DXMainTable']/tbody/tr[@class='dxgvDataRow_SisTheme']")
+            )).size();
 
-            List<WebElement> rows = table.findElements(
-                    By.xpath("./tr[@class='dxgvDataRow_SisTheme']")
-            );
-
-            for (WebElement row : rows) {
-                List<WebElement> columns = row.findElements(By.xpath("./td"));
+            for (int i = 1; i <= rowSize; i++) {
+                Thread.sleep(1000);
+                List<WebElement> columns = wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(
+                        By.xpath(String.format("//table[@id='MainContent_gvCoursesGrid_DXMainTable']/tbody/tr[@class='dxgvDataRow_SisTheme'][%d]/td", i))
+                ));
 
                 /*
-                 * 1 ---> button click detail course and get course name by english (Tên tiếng anh của học phần)
-                 * 2 ---> Mã học phần
-                 * 3 ---> Tên học phần
-                 * 4 ---> Thời lượng
-                 * 5 ---> Số tín chỉ
-                 * 6 ---> TC học phí
-                 * 7 ---> Trọng số
+                 * 0 ---> button click detail course and get course name by english (Tên tiếng anh của học phần)
+                 * 1 ---> Mã học phần
+                 * 2 ---> Tên học phần
+                 * 3 ---> Thời lượng
+                 * 4 ---> Số tín chỉ
+                 * 5 ---> TC học phí
+                 * 6 ---> Trọng số
                  */
-                Integer columnIndex = 1;
-                for (WebElement column : columns) {
-                    switch (columnIndex) {
-                        case 1:
-                            column.click();
-                            // Get (Tên tiếng anh của học phần)
-                            WebElement englishCourseName = wait.until(ExpectedConditions.presenceOfElementLocated(
-                                    By.xpath("//tr[@class='dxgvDetailRow_SisTheme']//td[contains(., 'Tên tiếng anh')]/b[2]")
-                            ));
-                            System.out.println("Tên học phần bằng tiếng anh" + englishCourseName.getText());
-                            columnIndex++;
-                            break;
-                        case 2:
-                            column.getText();
-                            columnIndex++;
-                            break;
-                        case 3:
-                            column.getText();
-                            columnIndex++;
-                            break;
-                        case 4:
-                            column.getText();
-                            columnIndex++;
-                            break;
-                        case 5:
-                            column.getText();
-                            columnIndex++;
-                            break;
-                        case 6:
-                            column.getText();
-                            columnIndex++;
-                            break;
-                        case 7:
-                            column.getText();
-                            columnIndex++;
-                            break;
-                    }
 
-                }
+                // Đợi loading div biến mất
+                wait.until(ExpectedConditions.invisibilityOfElementLocated(
+                        By.id("MainContent_gvCoursesGrid_LD")
+                ));
+                Thread.sleep(800);
+                columns.get(0).click();
+                Thread.sleep(800);
+                // phải get lại columns vì các phần tử column bị thay đổi sau khi click
+                columns = wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(
+                        By.xpath(String.format("//table[@id='MainContent_gvCoursesGrid_DXMainTable']/tbody/tr[@class='dxgvDataRow_SisTheme'][%d]/td", i))
+                ));
+
+                String englishCourseName = wait.until(ExpectedConditions.presenceOfElementLocated(
+                        By.xpath("//tr[@class='dxgvDetailRow_SisTheme']//td[contains(., 'Tên tiếng anh')]/b[2]")
+                )).getText();
+
+                // Viện quản lý
+                String instituteManage = wait.until(ExpectedConditions.presenceOfElementLocated(
+                        By.xpath("//tr[@class='dxgvDetailRow_SisTheme']//td[contains(., 'Viện quản lý')]/b[4]")
+                )).getText();
+
+                //Học phần điều kiện
+                String courseCondition = wait.until(ExpectedConditions.presenceOfElementLocated(
+                        By.xpath("//tr[@class='dxgvDetailRow_SisTheme']//td[contains(., 'Học phần điều kiện')]/b[1]")
+                )).getText();
+
+                String courseCode = columns.get(1).getText();      // * 1 ---> Mã học phần
+                String courseName = columns.get(2).getText();       // * 2 ---> Tên học phần
+                String courseDuration = columns.get(3).getText();   // * 3 ---> Thời lượng
+                String courseCredit = columns.get(4).getText();     // * 4 ---> Số tín chỉ
+                String creditFee = columns.get(5).getText();       // * 5 ---> TC học phí
+                String courseWeight = columns.get(6).getText();       // * 6 ---> Trọng số
+
+                System.out.println(String.format(
+                        """
+                                 ----------------------------------------------------
+                                 Tên học phần: %s
+                                 Tên tiếng anh của học phần: %s
+                                 Mã học phần: %s
+                                 Thời lượng: %s
+                                 Số tín chỉ: %s
+                                 Tín chỉ học phí: %s
+                                 Trọng số: %s
+                                 Viện quản lý: %s
+                                 Học phần điều kiện: %s
+                                 ----------------------------------------------------
+                                """
+                        , courseName, englishCourseName, courseCode, courseDuration, courseCredit, creditFee, courseWeight, instituteManage, courseCondition));
 
             }
-
         } catch (Exception e) {
             log.error("[ERROR-EXTRACT-TABLE-DATA]: {}", e.getMessage());
         }
+    }
+
+    public Boolean paging(WebDriver driver, int index) {
+        if (index != 2) {
+            if (driver.findElements(By.xpath("//b[@class='dxp-button dxp-disabledButton']")).isEmpty()) {
+                return false;
+            }
+        }
+
+        List<WebElement> elements = (driver.findElements(By.xpath(
+                "//*[@id='MainContent_gvCoursesGrid_DXPagerBottom']/b[@class='dxp-button']/img[@alt='Next']"
+        )));
+        elements.get(0).click();
+        return true;
     }
 
 
