@@ -16,12 +16,28 @@ public class Course {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private String name;
+    private String name; // Tên học phần
 
-    private String englishName;
+    @Column(name = "english_name")
+    private String englishName; // Tên học phần tiếng anh
 
-    private String code;
+    private String code; // Mã học phần
 
-//    private
+    private String duration; // Thời lượng
+
+    private String credits; // Số tín chỉ
+
+    @Column(name = "credit_fee")
+    private String creditFee; // TC học phí
+
+    private String weight; // trọng số
+
+    @Column(name = "list_course_condtion")
+    private String listCourseCondition; // Danh sách học phần điều kiện
+
+    @Column(name = "instituteManage")
+    private String instituteManage; // Viện quản lý
+
+
 
 }

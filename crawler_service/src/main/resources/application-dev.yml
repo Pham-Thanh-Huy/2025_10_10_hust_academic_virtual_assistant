@@ -1,5 +1,10 @@
 spring:
   application:
     name: crawler-service
-
-s
+  datasource:
+    url: jdbc:mysql://localhost:3307/hust_assistant_data
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update

@@ -27,7 +27,7 @@ public class SeleniumConfig {
 
     // if device has proxy and cannot automation chrome driver
     public static WebDriver initWebDriver(Boolean proxies) {
-        if (proxies = false) {
+        if (proxies == false) {
             return initWebDriver();
         }
         try {

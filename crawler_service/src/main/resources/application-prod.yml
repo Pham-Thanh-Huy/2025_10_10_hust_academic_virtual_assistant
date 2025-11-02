@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: crawler-service
+  datasource:
+    url: jdbc:mysql://mysql-container:3306/hust_assistant_data
+    username: root
+    password: root
