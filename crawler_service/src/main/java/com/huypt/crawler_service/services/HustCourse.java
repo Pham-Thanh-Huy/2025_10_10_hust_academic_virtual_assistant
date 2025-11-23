@@ -20,6 +20,7 @@ import org.springframework.util.ObjectUtils;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 26/10/2025
@@ -34,10 +35,10 @@ public class HustCourse {
     private final CourseRepository courseRepository;
 
     public BaseResponse<String> crawlData() {
+        List<Course> courses = new ArrayList<>();
         WebDriver driver = SeleniumConfig.initWebDriver(false);
         driver.get(BASE_URL);
         try {
-            List<Course> courses = new ArrayList<>();
 
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
             int index = 0;
@@ -63,13 +64,17 @@ public class HustCourse {
                 index++;
             }
 
-            if(!ObjectUtils.isEmpty(courses)){
-                courseRepository.saveAll(courses);
+            if (!ObjectUtils.isEmpty(courses)) {
+                saveOrUpdate(courses);
             }
 
             log.info("Crawl completed!");
+            driver.quit();
             return BaseResponse.success("Lấy và cập nhật dữ liệu thành công");
         } catch (Exception e) {
+            // if catch -> still check and save all course has crawled
+            saveOrUpdate(courses);
+
             log.info(e.getMessage());
             driver.quit();
             return BaseResponse.internalServerError();
@@ -134,7 +139,8 @@ public class HustCourse {
                 String courseWeight = columns.get(6).getText();       // * 6 ---> Trọng số
 
                 Course course = Course.builder()
-                        .name(courseName)
+                        .name(courseName)  
+                        .englishName(englishCourseName    )
                         .code(courseCode)
                         .duration(courseDuration)
                         .credits(courseCredit)
@@ -172,6 +178,7 @@ public class HustCourse {
     public Boolean paging(WebDriver driver, int index) {
         if (index > 1) {
             if (!driver.findElements(By.xpath("//b[@class='dxp-button dxp-disabledButton']")).isEmpty()) {
+                System.out.println("Trang cuối");
                 return false;
             }
         }
@@ -183,5 +190,43 @@ public class HustCourse {
         return true;
     }
 
+
+    // ---> Check exist and add or update to db
+    public void saveOrUpdate(List<Course> courses) {
+        try {
+            List<Course> courseExist = courseRepository.findAll();
+
+             /*
+                - check exist by contains has use method equals and hash code (custom method equals cannot check id)
+                - After checking (filter), if course does not exist but course code in this course still exist,
+                  the course has edited any field (name, code or etc...)
+                - ---> Update this course all field
+             */
+            List<Course> newCourse = courses.stream().
+                    filter(course -> !courseExist.contains(course))
+                    .map(
+                            course -> {
+                                Course c = courseRepository.existsByCode(course.getCode());
+                                if (!ObjectUtils.isEmpty(c)) {
+                                    c.setName(course.getName());
+                                    c.setEnglishName(course.getEnglishName());
+                                    c.setDuration(course.getDuration());
+                                    c.setCredits(course.getCredits());
+                                    c.setCreditFee(course.getCreditFee());
+                                    c.setWeight(course.getWeight());
+                                    c.setListCourseCondition(course.getListCourseCondition());
+                                    c.setInstituteManage(course.getInstituteManage());
+                                    return c;
+                                }
+                                return course;
+                            }
+                    )
+                    .toList();
+
+            courseRepository.saveAll(newCourse);
+        } catch (Exception e) {
+            log.info("[ERROR-SAVE-TO-DB]: {}]", e.getMessage());
+        }
+    }
 
 }

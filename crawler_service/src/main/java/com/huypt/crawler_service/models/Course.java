@@ -1,10 +1,9 @@
 package com.huypt.crawler_service.models;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import java.util.Objects;
 
 @Data
 @AllArgsConstructor
@@ -39,5 +38,24 @@ public class Course {
     private String instituteManage; // Viện quản lý
 
 
+    // Custom equals not check id
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        Course course = (Course) o;
+        return Objects.equals(name, course.name)
+                && Objects.equals(code, course.code)
+                && Objects.equals(englishName, course.englishName)
+                && Objects.equals(duration, course.duration)
+                && Objects.equals(credits, course.credits)
+                && Objects.equals(creditFee, course.creditFee)
+                && Objects.equals(weight, course.weight)
+                && Objects.equals(listCourseCondition, course.listCourseCondition)
+                && Objects.equals(instituteManage, course.instituteManage);
+    }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, englishName, code, duration, credits, creditFee, weight, listCourseCondition, instituteManage);
+    }
 }
