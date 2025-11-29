@@ -43,6 +43,7 @@ public class HustCourse {
             WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
             int index = 0;
             while (true) {
+                System.out.printf("-------------------------Trang (%s)%n", index + 1);
                 // Nếu = 0 thì là trang đầu tiên nên lấy luôn table
                 if (index == 0) {
                     List<Course> data = extractTableData(wait);
@@ -139,8 +140,8 @@ public class HustCourse {
                 String courseWeight = columns.get(6).getText();       // * 6 ---> Trọng số
 
                 Course course = Course.builder()
-                        .name(courseName)  
-                        .englishName(englishCourseName    )
+                        .name(courseName)
+                        .englishName(englishCourseName)
                         .code(courseCode)
                         .duration(courseDuration)
                         .credits(courseCredit)
@@ -151,7 +152,7 @@ public class HustCourse {
                         .build();
                 courses.add(course);
 
-                System.out.println(String.format(
+                System.out.printf(
                         """
                                  ----------------------------------------------------
                                  Tên học phần: %s
@@ -164,8 +165,8 @@ public class HustCourse {
                                  Viện quản lý: %s
                                  Học phần điều kiện: %s
                                  ----------------------------------------------------
-                                """
-                        , courseName, englishCourseName, courseCode, courseDuration, courseCredit, creditFee, courseWeight, instituteManage, courseCondition));
+                                %n"""
+                        , courseName, englishCourseName, courseCode, courseDuration, courseCredit, creditFee, courseWeight, instituteManage, courseCondition);
 
             }
             return courses;
