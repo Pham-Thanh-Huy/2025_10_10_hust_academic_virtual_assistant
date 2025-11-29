@@ -1,0 +1,76 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extension files
+*.so
+
+# Virtual environments
+env/
+venv/
+ENV/
+.venv/
+.ENV/
+
+# Environment variables
+.env
+*.env
+
+# Pytest, coverage, test reports
+.cache/
+.coverage
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Flask/Django specific
+instance/
+*.log
+
+# SQLite and DB files
+*.sqlite3
+*.db
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+*.iml
+
+# Migrations
+migrations/__pycache__/
+migrations/*.pyc
+
+# Compiled source
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Docker files
+*.pid
+*.tar
+docker-compose.override.yml
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# macOS / Windows system files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Miscellaneous
+*.bak
+*.swp
+*.tmp
