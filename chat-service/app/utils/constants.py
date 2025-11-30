@@ -10,4 +10,7 @@ class Constant:
         NOT_FOUND = 'Not found!'
         NOT_FOUND_CODE = '404'
 
+    class EMBEDDING:
+        COURSE_EMBEDDING = 'course_embeddings'
+
 

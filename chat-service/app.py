@@ -1,3 +1,4 @@
+from app.services.embedding import get_course, combine_text
 
 if __name__ == '__main__':
     import uvicorn
