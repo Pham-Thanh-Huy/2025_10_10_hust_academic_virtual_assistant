@@ -5,12 +5,13 @@ from pathlib import Path
 
 def init_chroma_db(collection_name):
     # Lấy thư mục gốc của project
-    ROOT_DIR = Path(__file__).resolve().parents[3]
+    ROOT_DIR = Path(__file__).resolve().parents[2]
 
     # Thư mục lưu trữ vector DB
     VECTOR_DB_DIR = ROOT_DIR / "vector_db"
     VECTOR_DB_DIR.mkdir(exist_ok=True)
 
+    print(str(VECTOR_DB_DIR))
     client = Client(Settings(
         persist_directory=str(VECTOR_DB_DIR),
         is_persistent=True
