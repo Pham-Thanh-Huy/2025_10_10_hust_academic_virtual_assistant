@@ -1,14 +1,18 @@
 from chromadb import Client
 from chromadb.config import Settings
 import os
+from pathlib import Path
 
 def init_chroma_db(collection_name):
-    project_dir = os.path.dirname(os.path.abspath(__file__))
-    db_dir = os.path.join(project_dir, "chroma_db")
-    os.makedirs(db_dir, exist_ok=True)
+    # Lấy thư mục gốc của project
+    ROOT_DIR = Path(__file__).resolve().parents[3]
+
+    # Thư mục lưu trữ vector DB
+    VECTOR_DB_DIR = ROOT_DIR / "vector_db"
+    VECTOR_DB_DIR.mkdir(exist_ok=True)
 
     client = Client(Settings(
-        persist_directory=db_dir,
+        persist_directory=str(VECTOR_DB_DIR),
         is_persistent=True
     ))
 
