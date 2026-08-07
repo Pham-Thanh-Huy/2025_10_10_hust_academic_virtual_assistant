@@ -74,9 +74,7 @@ export default function CourseList() {
           <p className="mt-2 text-sm text-gray-500">Quản lý học phần trong hệ thống HUST Assistant</p>
         </div>
 
-        {/* <button
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-700 to-red-900 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-red-700/20 transition hover:brightness-110 md:w-auto"
-                >
+        {/* <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-700 to-red-900 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-red-700/20 transition hover:brightness-110 md:w-auto">
 
                     <Plus size={18} />
 

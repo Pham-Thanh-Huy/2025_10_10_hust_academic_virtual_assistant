@@ -100,36 +100,20 @@ export default function StudentList() {
 
       <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
         <div className="grid gap-4 lg:grid-cols-4">
-          <div
-            className="flex items-center gap-3 rounded-xl border px-4"
-          >
+          <div className="flex items-center gap-3 rounded-xl border px-4">
             <Search size={18} className="text-gray-400" />
 
             <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Tìm kiếm tổng..." className="w-full py-3 outline-none" />
           </div>
 
-          <input
-            value={studentCode}
-            onChange={(e) => setStudentCode(e.target.value)}
-            placeholder="Tìm theo MSSV"
-            className="rounded-xl border px-4 py-3 outline-none focus:border-red-700"
-          />
+          <input value={studentCode} onChange={(e) => setStudentCode(e.target.value)} placeholder="Tìm theo MSSV" className="rounded-xl border px-4 py-3 outline-none focus:border-red-700" />
 
-          <input
-            value={studentName}
-            onChange={(e) => setStudentName(e.target.value)}
-            placeholder="Tìm theo tên sinh viên"
-            className="rounded-xl border px-4 py-3 outline-none focus:border-red-700"
-          />
+          <input value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder="Tìm theo tên sinh viên" className="rounded-xl border px-4 py-3 outline-none focus:border-red-700" />
 
           <div className="flex items-center gap-3">
             <Filter size={18} className="text-gray-400" />
 
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="w-full rounded-xl border px-4 py-3"
-            >
+            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full rounded-xl border px-4 py-3">
               <option value="ALL">Tất cả trạng thái</option>
 
               <option value="ACTIVE">Đang hoạt động</option>
@@ -140,9 +124,7 @@ export default function StudentList() {
         </div>
       </div>
 
-      <div
-        className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm"
-      >
+      <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
             <thead className="bg-gray-50">
@@ -173,13 +155,7 @@ export default function StudentList() {
                   <td className="px-6 py-5 text-gray-600">{student.department}</td>
 
                   <td className="px-6 py-5">
-                    <span
-                      text-xs
-                      font-semibold
-                      className={`rounded-full px-3 py-1
-                                            ${student.status === 'ACTIVE' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}
-                                        `}
-                    >
+                    <span text-xs font-semibold className={`rounded-full px-3 py-1 ${student.status === 'ACTIVE' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                       {student.status === 'ACTIVE' ? 'Hoạt động' : 'Đã khóa'}
                     </span>
                     <td className="px-6 py-5"></td>

@@ -40,25 +40,12 @@ export default function StudentModal({ type, student, close }: Props) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
-    >
-      <div
-        className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl scrollbar-thin scrollbar-thumb-red-300"
-      >
-        <div
-          className="mb-6 flex items-center justify-between"
-        >
-          <h2
-            className="text-xl font-bold text-gray-900"
-          >
-            {type === 'create' ? 'Thêm sinh viên' : type === 'edit' ? 'Cập nhật sinh viên' : type === 'delete' ? 'Xóa sinh viên' : 'Thông tin sinh viên'}
-          </h2>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl scrollbar-thin scrollbar-thumb-red-300">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900">{type === 'create' ? 'Thêm sinh viên' : type === 'edit' ? 'Cập nhật sinh viên' : type === 'delete' ? 'Xóa sinh viên' : 'Thông tin sinh viên'}</h2>
 
-          <button
-            onClick={close}
-            className="flex h-10 w-10 items-center justify-center rounded-xl hover:bg-gray-100"
-          >
+          <button onClick={close} className="flex h-10 w-10 items-center justify-center rounded-xl hover:bg-gray-100">
             <X size={20} />
           </button>
         </div>
@@ -66,10 +53,7 @@ export default function StudentModal({ type, student, close }: Props) {
         {type === 'detail' && student && (
           <div className="space-y-3">
             {Object.entries(student).map(([key, value]) => (
-              <div
-                key={key}
-                className="flex justify-between rounded-xl bg-gray-50 p-4"
-              >
+              <div key={key} className="flex justify-between rounded-xl bg-gray-50 p-4">
                 <span className="text-gray-400">{key}</span>
 
                 <span className="font-semibold">{value}</span>
@@ -79,9 +63,7 @@ export default function StudentModal({ type, student, close }: Props) {
         )}
 
         {(type === 'create' || type === 'edit') && (
-          <div
-            className="grid gap-4 md:grid-cols-2"
-          >
+          <div className="grid gap-4 md:grid-cols-2">
             <Input label="MSSV" value={form.code} onChange={(v) => updateField('code', v)} />
 
             <Input label="Họ tên" value={form.name} onChange={(v) => updateField('name', v)} />
@@ -95,17 +77,9 @@ export default function StudentModal({ type, student, close }: Props) {
             <Input label="Lớp" value={form.className} onChange={(v) => updateField('className', v)} />
 
             <div>
-              <label
-                className="mb-2 block text-sm font-medium"
-              >
-                Trạng thái
-              </label>
+              <label className="mb-2 block text-sm font-medium">Trạng thái</label>
 
-              <select
-                value={form.status}
-                onChange={(e) => updateField('status', e.target.value)}
-                className="w-full rounded-xl border px-4 py-3"
-              >
+              <select value={form.status} onChange={(e) => updateField('status', e.target.value)} className="w-full rounded-xl border px-4 py-3">
                 <option value="ACTIVE">Hoạt động</option>
 
                 <option value="LOCKED">Đã khóa</option>
@@ -115,35 +89,19 @@ export default function StudentModal({ type, student, close }: Props) {
         )}
 
         {type === 'delete' && student && (
-          <div
-            className="rounded-xl bg-red-50 p-5 text-gray-700"
-          >
+          <div className="rounded-xl bg-red-50 p-5 text-gray-700">
             Bạn có chắc muốn xóa
-            <b
-              className="mx-1 text-red-700"
-            >
-              {student.name}
-            </b>
-            ?
+            <b className="mx-1 text-red-700">{student.name}</b>?
           </div>
         )}
 
         {type !== 'detail' && (
-          <div
-            className="mt-8 flex justify-end gap-3"
-          >
-            <button
-              onClick={close}
-              className="rounded-xl border px-5 py-3 font-semibold"
-            >
+          <div className="mt-8 flex justify-end gap-3">
+            <button onClick={close} className="rounded-xl border px-5 py-3 font-semibold">
               Hủy
             </button>
 
-            <button
-              className="rounded-xl bg-red-700 px-5 py-3 font-semibold text-white"
-            >
-              {type === 'delete' ? 'Xóa' : 'Lưu'}
-            </button>
+            <button className="rounded-xl bg-red-700 px-5 py-3 font-semibold text-white">{type === 'delete' ? 'Xóa' : 'Lưu'}</button>
           </div>
         )}
       </div>
@@ -154,17 +112,9 @@ export default function StudentModal({ type, student, close }: Props) {
 function Input({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
     <div>
-      <label
-        className="mb-2 block text-sm font-medium"
-      >
-        {label}
-      </label>
+      <label className="mb-2 block text-sm font-medium">{label}</label>
 
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border px-4 py-3 outline-none focus:border-red-700"
-      />
+      <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-xl border px-4 py-3 outline-none focus:border-red-700" />
     </div>
   );
 }
