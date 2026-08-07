@@ -1,4 +1,4 @@
-import { Eye, Filter, Search, X } from 'lucide-react';
+import {ChevronDown, Eye, Filter, Search, X} from 'lucide-react';
 import { useState } from 'react';
 
 const courses = [
@@ -73,58 +73,53 @@ export default function CourseList() {
 
           <p className="mt-2 text-sm text-gray-500">Quản lý học phần trong hệ thống HUST Assistant</p>
         </div>
-
-        {/* <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-700 to-red-900 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-red-700/20 transition hover:brightness-110 md:w-auto">
-
-                    <Plus size={18} />
-
-                    Thêm học phần
-
-                </button> */}
       </div>
 
-      <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <div className="flex flex-1 items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-            <Search size={18} className="text-gray-400" />
+      <div className="flex items-center gap-4">
+        <div className="flex h-12 flex-1 items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 shadow-sm transition focus-within:border-red-200 focus-within:ring-2 focus-within:ring-red-100">
+          <Search size={18} className="text-gray-400" />
 
-            <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Tìm kiếm học phần..." className="w-full bg-transparent text-sm outline-none" />
-          </div>
+          <input
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder={filterType === 'name' ? 'Tìm kiếm theo tên học phần...' : 'Tìm kiếm theo mã học phần...'}
+              className="w-full bg-transparent text-sm text-gray-700 placeholder:text-gray-400 outline-none"
+          />
+        </div>
 
-          <div className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3">
-            <Filter size={17} />
+        <div className="relative flex h-12 items-center rounded-xl border border-gray-100 bg-white shadow-sm transition focus-within:border-red-200 focus-within:ring-2 focus-within:ring-red-100">
+          <Filter size={17} className="ml-4 text-gray-400" />
 
-            <select value={filterType} onChange={(e) => setFilterType(e.target.value as 'name' | 'code')} className="bg-transparent text-sm outline-none">
-              <option value="name">Tên học phần</option>
+          <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as 'name' | 'code')}
+              className="h-full appearance-none bg-transparent px-3 pr-10 text-sm text-gray-700 outline-none"
+          >
+            <option value="name">Tên học phần</option>
+            <option value="code">Mã học phần</option>
+          </select>
 
-              <option value="code">Mã học phần</option>
-            </select>
-          </div>
+          <ChevronDown size={16} className="pointer-events-none absolute right-4 text-gray-400" />
         </div>
       </div>
 
       <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
         <div className="hidden overflow-x-auto md:block">
-          <table className="w-full min-w-[900px]">
-            <thead className="bg-gray-50">
-              <tr className="text-left text-xs uppercase text-gray-400">
-                <th className="px-6 py-4">Mã học phần</th>
-
-                <th className="px-6 py-4">Tên học phần</th>
-
-                <th className="px-6 py-4">Tín chỉ</th>
-
-                <th className="px-6 py-4">Sinh viên</th>
-
-                <th className="px-6 py-4">Trạng thái</th>
-
-                <th className="px-6 py-4 text-right">Thao tác</th>
-              </tr>
+          <table className="w-full">
+            <thead>
+            <tr>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Mã học phần</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Tên học phần</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Tín chỉ</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Sinh viên</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Trạng thái</th>
+              <th className="px-6 py-4 text-right text-sm font-semibold text-gray-500">Thao tác</th>
+            </tr>
             </thead>
 
             <tbody>
-              {filteredCourses.map((course) => (
-                <tr key={course.id} className="border-t hover:bg-red-50/40">
+            {filteredCourses.map((course) => (
+                <tr key={course.id} className="border-t border-gray-100 transition hover:bg-red-50/40">
                   <td className="px-6 py-5">
                     <span className="rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-red-700">{course.code}</span>
                   </td>
@@ -140,13 +135,13 @@ export default function CourseList() {
                   </td>
 
                   <td className="px-6 py-5 text-right">
-                    <button onClick={() => setSelectedCourse(course)} className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">
+                    <button onClick={() => setSelectedCourse(course)} className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100">
                       <Eye size={16} />
                       Chi tiết
                     </button>
                   </td>
                 </tr>
-              ))}
+            ))}
             </tbody>
           </table>
         </div>

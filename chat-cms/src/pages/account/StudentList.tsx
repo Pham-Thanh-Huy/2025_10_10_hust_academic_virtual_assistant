@@ -1,4 +1,4 @@
-import { Edit, Eye, Plus, Search, Trash2 } from 'lucide-react';
+import {ChevronDown, Edit, Eye, Plus, Search, Trash2} from 'lucide-react';
 import { useState } from 'react';
 import StudentModal from './StudentModal.tsx';
 
@@ -124,9 +124,9 @@ export default function StudentList() {
       </div>
 
       {/* SEARCH */}
-      <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
         {/* FILTERS */}
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-4 gap-5">
           {/* KEYWORD */}
           <div>
             <label className="mb-2 block text-sm font-semibold text-gray-600">Tìm kiếm tổng</label>
@@ -135,16 +135,16 @@ export default function StudentList() {
               <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
 
               <input
-                type="text"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearch();
-                  }
-                }}
-                placeholder="MSSV, tên, email..."
-                className="w-full rounded-xl border px-4 py-3 pl-11 outline-none transition focus:border-red-700"
+                  type="text"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch();
+                    }
+                  }}
+                  placeholder="MSSV, tên, email..."
+                  className="h-12 w-full rounded-xl border border-gray-100 bg-white pl-11 pr-4 text-sm text-gray-700 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100"
               />
             </div>
           </div>
@@ -154,16 +154,16 @@ export default function StudentList() {
             <label className="mb-2 block text-sm font-semibold text-gray-600">MSSV</label>
 
             <input
-              type="text"
-              value={studentCode}
-              onChange={(e) => setStudentCode(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch();
-                }
-              }}
-              placeholder="Tìm theo MSSV"
-              className="w-full rounded-xl border px-4 py-3 outline-none transition focus:border-red-700"
+                type="text"
+                value={studentCode}
+                onChange={(e) => setStudentCode(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
+                }}
+                placeholder="Tìm theo MSSV"
+                className="h-12 w-full rounded-xl border border-gray-100 bg-white px-4 text-sm text-gray-700 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100"
             />
           </div>
 
@@ -172,16 +172,16 @@ export default function StudentList() {
             <label className="mb-2 block text-sm font-semibold text-gray-600">Tên sinh viên</label>
 
             <input
-              type="text"
-              value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearch();
-                }
-              }}
-              placeholder="Tìm theo tên sinh viên"
-              className="w-full rounded-xl border px-4 py-3 outline-none transition focus:border-red-700"
+                type="text"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
+                }}
+                placeholder="Tìm theo tên sinh viên"
+                className="h-12 w-full rounded-xl border border-gray-100 bg-white px-4 text-sm text-gray-700 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100"
             />
           </div>
 
@@ -189,19 +189,32 @@ export default function StudentList() {
           <div>
             <label className="mb-2 block text-sm font-semibold text-gray-600">Trạng thái</label>
 
-            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full rounded-xl border bg-white px-4 py-3 outline-none transition focus:border-red-700">
-              <option value="ALL">Tất cả trạng thái</option>
+            <div className="relative">
+              <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="h-12 w-full appearance-none rounded-xl border border-gray-100 bg-white px-4 pr-10 text-sm text-gray-700 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100"
+              >
+                <option value="ALL">Tất cả trạng thái</option>
+                <option value="ACTIVE">Đang hoạt động</option>
+                <option value="LOCKED">Đã khóa</option>
+              </select>
 
-              <option value="ACTIVE">Đang hoạt động</option>
-
-              <option value="LOCKED">Đã khóa</option>
-            </select>
+              <ChevronDown
+                  size={18}
+                  className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+            </div>
           </div>
         </div>
 
         {/* SEARCH BUTTON */}
         <div className="mt-5 flex justify-end border-t border-gray-100 pt-5">
-          <button type="button" onClick={handleSearch} className="inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl bg-red-700 px-7 py-3 font-semibold text-white shadow-sm transition hover:bg-red-800">
+          <button
+              type="button"
+              onClick={handleSearch}
+              className="inline-flex h-12 min-w-[180px] items-center justify-center gap-2 rounded-xl bg-red-700 px-7 font-semibold text-white shadow-sm transition hover:bg-red-800"
+          >
             <Search size={18} />
             Tìm kiếm
           </button>
@@ -211,31 +224,26 @@ export default function StudentList() {
       {/* TABLE */}
       <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px] table-fixed">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-500">MSSV</th>
-
-                <th className="w-[27%] px-6 py-4 text-left text-sm font-semibold text-gray-500">Sinh viên</th>
-
-                <th className="w-[25%] px-6 py-4 text-left text-sm font-semibold text-gray-500">Khoa</th>
-
-                <th className="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-500">Trạng thái</th>
-
-                <th className="w-[18%] px-6 py-4 text-center text-sm font-semibold text-gray-500">Thao tác</th>
-              </tr>
+          <table className="w-full">
+            <thead>
+            <tr>
+              <th className="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-500">MSSV</th>
+              <th className="w-[27%] px-6 py-4 text-left text-sm font-semibold text-gray-500">Sinh viên</th>
+              <th className="w-[25%] px-6 py-4 text-left text-sm font-semibold text-gray-500">Khoa</th>
+              <th className="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-500">Trạng thái</th>
+              <th className="w-[18%] px-6 py-4 text-center text-sm font-semibold text-gray-500">Thao tác</th>
+            </tr>
             </thead>
 
             <tbody>
-              {students.map((student) => (
-                <tr key={student.id} className="border-t transition hover:bg-gray-50">
+            {students.map((student) => (
+                <tr key={student.id} className="border-t border-gray-100 transition hover:bg-gray-50">
                   {/* MSSV */}
                   <td className="px-6 py-5 font-semibold text-gray-900">{student.code}</td>
 
                   {/* STUDENT */}
                   <td className="px-6 py-5">
                     <p className="font-semibold text-gray-900">{student.name}</p>
-
                     <p className="mt-1 truncate text-sm text-gray-400">{student.email}</p>
                   </td>
 
@@ -264,7 +272,7 @@ export default function StudentList() {
                     </div>
                   </td>
                 </tr>
-              ))}
+            ))}
             </tbody>
           </table>
         </div>

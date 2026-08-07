@@ -1,0 +1,27 @@
+spring:
+  data:
+    mongodb:
+      host: hust-assistant-mongodb-container
+      port: 27017
+      database: hust_assistant
+      username: root
+      password: tla-hust!2026
+      authentication-database: admin
+  application:
+    name: report-service
+  datasource:
+    url: jdbc:mysql://hust-assistant-mysql-container:3306/hust_assistant
+    username: root
+    password: tla-hust!2026
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+server:
+  port: 8085
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://hust-assistant-eureka-server:8671/eureka/

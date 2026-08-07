@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class HustCourse {
 
-    private final String BASE_URL = "http://sis.hust.edu.vn/ModuleProgram/CourseLists.aspx";
+    private final String BASE_URL = "https://sis.hust.edu.vn/ModuleProgram/CourseLists.aspx";
     private final CourseRepository courseRepository;
 
     public BaseResponse<String> crawlData() {

@@ -21,7 +21,7 @@ public class SeleniumConfig {
     public static WebDriver initWebDriver() {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--start-maximized");
-        options.addArguments("headless");
+        options.addArguments("--headless=new");
         return new ChromeDriver(options);
     }
 
@@ -35,7 +35,7 @@ public class SeleniumConfig {
             System.setProperty("webdriver.chrome.driver", "/home/huypt84/Downloads/chromedriver-linux64/chromedriver");
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--start-maximized");
-            options.addArguments("headless");
+            options.addArguments("--headless=new");
 
             // GET FILE PROXY
             options.addExtensions(
