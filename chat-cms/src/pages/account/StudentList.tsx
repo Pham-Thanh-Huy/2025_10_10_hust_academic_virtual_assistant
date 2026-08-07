@@ -1,8 +1,8 @@
-import { Edit, Eye, Filter, Plus, Search, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Edit, Eye, Plus, Search, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import StudentModal from './StudentModal.tsx';
 
-interface Student {
+export interface Student {
   id: number;
   code: string;
   name: string;
@@ -59,23 +59,47 @@ export default function StudentList() {
   const [modal, setModal] = useState<ModalType>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
-  const filteredStudents = useMemo(() => {
-    return students.filter((student) => {
-      const searchAll = `${student.code} ${student.name} ${student.email}`.toLowerCase().includes(keyword.toLowerCase());
+  const handleSearch = () => {
+    const params: Record<string, string> = {};
 
-      const matchCode = student.code.toLowerCase().includes(studentCode.toLowerCase());
+    if (keyword.trim()) {
+      params.keyword = keyword.trim();
+    }
 
-      const matchName = student.name.toLowerCase().includes(studentName.toLowerCase());
+    if (studentCode.trim()) {
+      params.studentCode = studentCode.trim();
+    }
 
-      const matchStatus = status === 'ALL' || student.status === status;
+    if (studentName.trim()) {
+      params.studentName = studentName.trim();
+    }
 
-      return searchAll && matchCode && matchName && matchStatus;
-    });
-  }, [students, keyword, studentCode, studentName, status]);
+    if (status !== 'ALL') {
+      params.status = status;
+    }
+
+    console.log('Student search params:', params);
+
+    // TODO:
+    // Sau này gọi API tại đây.
+    //
+    // Ví dụ:
+    //
+    // const response =
+    //   await studentService.getStudents(params);
+    //
+    // GET /students
+    //   ?keyword=
+    //   &studentCode=
+    //   &studentName=
+    //   &status=
+    //
+    // Field nào không có value thì không gửi.
+  };
 
   const openModal = (type: ModalType, student?: Student) => {
     setModal(type);
-    setSelectedStudent(student || null);
+    setSelectedStudent(student ?? null);
   };
 
   const closeModal = () => {
@@ -85,35 +109,87 @@ export default function StudentList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      {/* HEADER */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý sinh viên</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Quản lý sinh viên</h1>
 
           <p className="mt-2 text-gray-500">Quản lý tài khoản sinh viên trong hệ thống HUST Assistant</p>
         </div>
 
-        <button onClick={() => openModal('create')} className="flex items-center justify-center gap-2 rounded-xl bg-red-700 px-5 py-3 font-semibold text-white shadow-lg shadow-red-700/20 hover:bg-red-800">
+        <button type="button" onClick={() => openModal('create')} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-red-700 px-5 py-3 font-semibold text-white shadow-lg shadow-red-700/20 transition hover:bg-red-800">
           <Plus size={20} />
           Thêm sinh viên
         </button>
       </div>
 
-      <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
-        <div className="grid gap-4 lg:grid-cols-4">
-          <div className="flex items-center gap-3 rounded-xl border px-4">
-            <Search size={18} className="text-gray-400" />
+      {/* SEARCH */}
+      <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+        {/* FILTERS */}
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {/* KEYWORD */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-600">Tìm kiếm tổng</label>
 
-            <input value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Tìm kiếm tổng..." className="w-full py-3 outline-none" />
+            <div className="relative">
+              <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+
+              <input
+                type="text"
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
+                }}
+                placeholder="MSSV, tên, email..."
+                className="w-full rounded-xl border px-4 py-3 pl-11 outline-none transition focus:border-red-700"
+              />
+            </div>
           </div>
 
-          <input value={studentCode} onChange={(e) => setStudentCode(e.target.value)} placeholder="Tìm theo MSSV" className="rounded-xl border px-4 py-3 outline-none focus:border-red-700" />
+          {/* STUDENT CODE */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-600">MSSV</label>
 
-          <input value={studentName} onChange={(e) => setStudentName(e.target.value)} placeholder="Tìm theo tên sinh viên" className="rounded-xl border px-4 py-3 outline-none focus:border-red-700" />
+            <input
+              type="text"
+              value={studentCode}
+              onChange={(e) => setStudentCode(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
+              }}
+              placeholder="Tìm theo MSSV"
+              className="w-full rounded-xl border px-4 py-3 outline-none transition focus:border-red-700"
+            />
+          </div>
 
-          <div className="flex items-center gap-3">
-            <Filter size={18} className="text-gray-400" />
+          {/* STUDENT NAME */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-600">Tên sinh viên</label>
 
-            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full rounded-xl border px-4 py-3">
+            <input
+              type="text"
+              value={studentName}
+              onChange={(e) => setStudentName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
+              }}
+              placeholder="Tìm theo tên sinh viên"
+              className="w-full rounded-xl border px-4 py-3 outline-none transition focus:border-red-700"
+            />
+          </div>
+
+          {/* STATUS */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-600">Trạng thái</label>
+
+            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full rounded-xl border bg-white px-4 py-3 outline-none transition focus:border-red-700">
               <option value="ALL">Tất cả trạng thái</option>
 
               <option value="ACTIVE">Đang hoạt động</option>
@@ -122,54 +198,67 @@ export default function StudentList() {
             </select>
           </div>
         </div>
+
+        {/* SEARCH BUTTON */}
+        <div className="mt-5 flex justify-end border-t border-gray-100 pt-5">
+          <button type="button" onClick={handleSearch} className="inline-flex min-w-[180px] items-center justify-center gap-2 rounded-xl bg-red-700 px-7 py-3 font-semibold text-white shadow-sm transition hover:bg-red-800">
+            <Search size={18} />
+            Tìm kiếm
+          </button>
+        </div>
       </div>
 
+      {/* TABLE */}
       <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px]">
+          <table className="w-full min-w-[1000px] table-fixed">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4 text-left text-sm text-gray-500">MSSV</th>
+                <th className="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-500">MSSV</th>
 
-                <th className="px-6 py-4 text-left text-sm text-gray-500">Sinh viên</th>
+                <th className="w-[27%] px-6 py-4 text-left text-sm font-semibold text-gray-500">Sinh viên</th>
 
-                <th className="px-6 py-4 text-left text-sm text-gray-500">Khoa</th>
+                <th className="w-[25%] px-6 py-4 text-left text-sm font-semibold text-gray-500">Khoa</th>
 
-                <th className="px-6 py-4 text-left text-sm text-gray-500">Trạng thái</th>
+                <th className="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-500">Trạng thái</th>
 
-                <th className="px-6 py-4 text-right text-sm text-gray-500">Thao tác</th>
+                <th className="w-[18%] px-6 py-4 text-center text-sm font-semibold text-gray-500">Thao tác</th>
               </tr>
             </thead>
 
             <tbody>
-              {filteredStudents.map((student) => (
-                <tr key={student.id} className="border-t hover:bg-gray-50">
-                  <td className="px-6 py-5 font-semibold">{student.code}</td>
+              {students.map((student) => (
+                <tr key={student.id} className="border-t transition hover:bg-gray-50">
+                  {/* MSSV */}
+                  <td className="px-6 py-5 font-semibold text-gray-900">{student.code}</td>
 
+                  {/* STUDENT */}
                   <td className="px-6 py-5">
                     <p className="font-semibold text-gray-900">{student.name}</p>
 
-                    <p className="text-sm text-gray-400">{student.email}</p>
+                    <p className="mt-1 truncate text-sm text-gray-400">{student.email}</p>
                   </td>
 
+                  {/* DEPARTMENT */}
                   <td className="px-6 py-5 text-gray-600">{student.department}</td>
 
+                  {/* STATUS */}
                   <td className="px-6 py-5">
-                    <span text-xs font-semibold className={`rounded-full px-3 py-1 ${student.status === 'ACTIVE' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                      {student.status === 'ACTIVE' ? 'Hoạt động' : 'Đã khóa'}
-                    </span>
-                    <td className="px-6 py-5"></td>
+                    <StatusBadge status={student.status} />
+                  </td>
 
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => openModal('detail', student)} className="rounded-xl bg-blue-50 p-2 text-blue-600">
+                  {/* ACTION */}
+                  <td className="px-6 py-5">
+                    <div className="flex items-center justify-center gap-2 whitespace-nowrap">
+                      <button type="button" onClick={() => openModal('detail', student)} title="Xem chi tiết" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition hover:bg-blue-100">
                         <Eye size={18} />
                       </button>
 
-                      <button onClick={() => openModal('edit', student)} className="rounded-xl bg-orange-50 p-2 text-orange-600">
+                      <button type="button" onClick={() => openModal('edit', student)} title="Chỉnh sửa" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600 transition hover:bg-orange-100">
                         <Edit size={18} />
                       </button>
 
-                      <button onClick={() => openModal('delete', student)} className="rounded-xl bg-red-50 p-2 text-red-600">
+                      <button type="button" onClick={() => openModal('delete', student)} title="Xóa sinh viên" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 transition hover:bg-red-100">
                         <Trash2 size={18} />
                       </button>
                     </div>
@@ -181,7 +270,14 @@ export default function StudentList() {
         </div>
       </div>
 
+      {/* MODAL */}
       {modal && <StudentModal type={modal} student={selectedStudent} close={closeModal} />}
     </div>
   );
+}
+
+function StatusBadge({ status }: { status: Student['status'] }) {
+  const isActive = status === 'ACTIVE';
+
+  return <span className={`inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{isActive ? 'Hoạt động' : 'Đã khóa'}</span>;
 }
