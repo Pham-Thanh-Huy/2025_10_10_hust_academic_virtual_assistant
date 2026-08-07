@@ -87,28 +87,32 @@ export const ChatComposer = ({
         ) : isProcessingVoice ? (
           <ProcessingIndicator />
         ) : (
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            value={value}
-            placeholder="Nhập câu hỏi..."
-            className="flex-1 min-w-0 px-4 py-3 text-base border border-gray-200 rounded-2xl focus:outline-none focus:border-[rgb(154,0,31)] shadow-md resize-none overflow-y-auto max-h-[240px] scroll-hidden"
-            style={{ fontSize: 16 }}
-            onChange={(event) => {
-              onChange(event.target.value);
-              event.target.style.height = "auto";
-              event.target.style.height = `${Math.min(
-                event.target.scrollHeight,
-                240,
-              )}px`;
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                onSend();
-              }
-            }}
-          />
+            <textarea
+                ref={textareaRef}
+                rows={1}
+                value={value}
+                placeholder="Nhập câu hỏi..."
+                className="flex-1 min-w-0 min-h-[48px] max-h-[240px] px-4 py-[11px] text-base leading-6 border border-gray-200 rounded-2xl focus:outline-none focus:border-[rgb(154,0,31)] shadow-md resize-none overflow-y-auto scroll-hidden"
+                style={{
+                    height: '48px',
+                    fontSize: 16,
+                }}
+                onChange={(event) => {
+                    onChange(event.target.value);
+
+                    event.target.style.height = '48px';
+                    event.target.style.height = `${Math.min(
+                        Math.max(event.target.scrollHeight, 48),
+                        240,
+                    )}px`;
+                }}
+                onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        onSend();
+                    }
+                }}
+            />
         )}
 
         <button

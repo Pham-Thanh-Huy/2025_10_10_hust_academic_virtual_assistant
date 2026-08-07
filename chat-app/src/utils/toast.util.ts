@@ -1,50 +1,59 @@
-import {toast} from "react-toastify";
+import { toast, type ToastOptions } from 'react-toastify';
 
-let isDone = true;
+const HUST_RED = 'rgb(154, 0, 31)';
+const HUST_DARK_RED = 'rgb(120, 0, 25)';
+const SUCCESS_GREEN = 'rgb(22, 163, 74)';
+const ERROR_TOAST_ID = 'global-error-message';
 
+const baseToastOptions: ToastOptions = {
+    position: 'top-right',
+    autoClose: 1500,
+    hideProgressBar: true,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    closeButton: false,
+    icon: false,
+    style: {
+        width: 'fit-content',
+        minWidth: '320px',
+        maxWidth: '420px',
+        padding: '15px 18px',
+        borderRadius: '14px',
+        fontSize: '14px',
+        fontWeight: '600',
+        lineHeight: '1.5',
+    },
+};
 
 export function showSuccessMessage(message: string) {
     toast.success(message, {
-        icon: false,
-        closeButton: false,
+        ...baseToastOptions,
         style: {
-            color: "#fff",
-            background: "linear-gradient(135deg, #22c55e, #16a34a)",
-            border: "1px solid rgba(255,255,255,0.2)",
-            borderRadius: "12px",
-            padding: "14px 18px",
-            fontSize: "15px",
-            fontWeight: "600",
-            boxShadow: "0 8px 25px rgba(34, 197, 94, 0.35)",
-            minWidth: "300px",
+            ...baseToastOptions.style,
+            color: '#166534',
+            background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)',
+            border: `1px solid ${SUCCESS_GREEN}`,
+            boxShadow: '0 12px 35px rgba(22, 163, 74, 0.15)',
         },
     });
 }
 
-export function showErrorMessage(message: string){
-    if(!isDone){
+export function showErrorMessage(message: string) {
+    if (toast.isActive(ERROR_TOAST_ID)) {
         return;
     }
 
-    isDone = false
-
     toast.error(message, {
-        icon: false,
-        closeButton: false,
+        ...baseToastOptions,
+        toastId: ERROR_TOAST_ID,
+        autoClose: 1500,
         style: {
-            color: "#fff",
-            background: "linear-gradient(135deg, #ff4b4b, #d63031)",
-            border: "1px solid rgba(255,255,255,0.2)",
-            borderRadius: "12px",
-            padding: "14px 18px",
-            fontSize: "15px",
-            fontWeight: "600",
-            boxShadow: "0 8px 25px rgba(255, 75, 75, 0.35)",
-            minWidth: "300px",
+            ...baseToastOptions.style,
+            color: HUST_DARK_RED,
+            background: 'linear-gradient(135deg, #ffffff 0%, #fff1f2 100%)',
+            border: `1px solid ${HUST_RED}`,
+            boxShadow: '0 12px 35px rgba(154, 0, 31, 0.16)',
         },
-        onClose: () => {
-            isDone = true
-        }
-    })
-
+    });
 }
