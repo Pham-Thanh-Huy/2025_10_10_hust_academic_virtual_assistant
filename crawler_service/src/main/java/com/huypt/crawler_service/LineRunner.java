@@ -13,6 +13,5 @@ public class LineRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        BaseResponse<String> a = hustCourse.crawlData();
     }
 }

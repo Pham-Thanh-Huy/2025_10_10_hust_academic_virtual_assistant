@@ -1,10 +1,47 @@
 spring:
   application:
     name: crawler-service
+
+  data:
+    mongodb:
+      host: localhost
+      port: 27018
+      database: hust_assistant
+      username: root
+      password: "tla-hust!2026"
+      authentication-database: admin
+
   datasource:
-    url: jdbc:mysql://localhost:3307/hust_assistant_data
+    url: jdbc:mysql://localhost:3307/hust_assistant
     username: root
-    password: root
+    password: "tla-hust!2026"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
   jpa:
     hibernate:
       ddl-auto: update
+
+server:
+  port: 8087
+
+jobrunr:
+  database:
+    type: mongodb
+    database-name: hust_assistant
+
+  job-scheduler:
+    enabled: true
+
+  background-job-server:
+    enabled: true
+    worker-count: 1
+    poll-interval-in-seconds: 15
+
+  dashboard:
+    enabled: true
+    port: 8101
+
+crawler:
+  course:
+    cron: "0 0 * * *"
+    zone-id: "Asia/Ho_Chi_Minh"

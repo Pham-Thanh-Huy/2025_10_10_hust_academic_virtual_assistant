@@ -4,11 +4,49 @@ eureka:
       defaultZone: http://hust-assistant-eureka-server:8671/eureka/
 
 server:
-  port: 8085
+  port: 8087
+
 spring:
   application:
     name: crawler-service
+
+  data:
+    mongodb:
+      host: hust-assistant-mongodb-container
+      port: 27017
+      database: hust_assistant
+      username: root
+      password: "tla-hust!2026"
+      authentication-database: admin
+
   datasource:
     url: jdbc:mysql://hust-assistant-mysql-container:3306/hust_assistant
     username: root
-    password: tla-hust!2026
+    password: "tla-hust!2026"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+jobrunr:
+  database:
+    type: mongodb
+    database-name: hust_assistant
+
+  job-scheduler:
+    enabled: true
+
+  background-job-server:
+    enabled: true
+    worker-count: 1
+    poll-interval-in-seconds: 15
+
+  dashboard:
+    enabled: true
+    port: 8000
+
+crawler:
+  course:
+    cron: "0 0 * * *"
+    zone-id: "Asia/Ho_Chi_Minh"

@@ -1,143 +1,287 @@
 package com.huypt.crawler_service.services;
 
-import com.google.common.collect.Table;
-import com.huypt.crawler_service.dtos.BaseResponse;
-import com.huypt.crawler_service.dtos.StatusEnum;
+import com.huypt.crawler_service.dtos.CrawlResult;
 import com.huypt.crawler_service.models.Course;
 import com.huypt.crawler_service.repositories.CourseRepository;
 import com.huypt.crawler_service.utils.SeleniumConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.bytebuddy.implementation.bytecode.Throw;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
+import org.springframework.util.CollectionUtils;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * 26/10/2025
- * Crawl list course in http://sis.hust.edu.vn/
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class HustCourse {
 
-    private final String BASE_URL = "https://sis.hust.edu.vn/ModuleProgram/CourseLists.aspx";
+    private static final String BASE_URL =
+            "http://sis.hust.edu.vn/ModuleProgram/CourseLists.aspx";
+
     private final CourseRepository courseRepository;
+    private final CrawlerJobLogService jobLogService;
 
-    public BaseResponse<String> crawlData() {
+    /**
+     * Thực hiện crawl toàn bộ danh sách học phần.
+     *
+     * @param crawlerJobLogId ID document CrawlerJobLog trong MongoDB
+     * @return số lượng học phần đã crawl và số lượng được thêm/cập nhật
+     */
+    public CrawlResult crawlData(String crawlerJobLogId) {
         List<Course> courses = new ArrayList<>();
-        WebDriver driver = SeleniumConfig.initWebDriver(false);
-        driver.get(BASE_URL);
+        WebDriver driver = null;
+
         try {
+            jobLogService.addLog(
+                    crawlerJobLogId,
+                    "Đang khởi tạo Selenium WebDriver"
+            );
 
-            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
-            int index = 0;
+            driver = SeleniumConfig.initWebDriver(false);
+            driver.get(BASE_URL);
+
+            jobLogService.addLog(
+                    crawlerJobLogId,
+                    "Đã truy cập trang danh sách học phần HUST"
+            );
+
+            WebDriverWait wait =
+                    new WebDriverWait(driver, Duration.ofSeconds(30));
+
+            int pageIndex = 0;
+
             while (true) {
-                System.out.printf("-------------------------Trang (%s)%n", index + 1);
-                // Nếu = 0 thì là trang đầu tiên nên lấy luôn table
-                if (index == 0) {
-                    List<Course> data = extractTableData(wait);
-                    if (!ObjectUtils.isEmpty(data)) {
-                        courses.addAll(data);
+                int pageNumber = pageIndex + 1;
+
+                log.info("Đang crawl trang {}", pageNumber);
+
+                jobLogService.addLog(
+                        crawlerJobLogId,
+                        "Bắt đầu xử lý trang " + pageNumber
+                );
+
+                /*
+                 * Trang đầu tiên đã được hiển thị ngay sau khi mở URL,
+                 * vì vậy không cần bấm nút Next.
+                 */
+                if (pageIndex == 0) {
+                    List<Course> extractedCourses =
+                            extractTableData(wait);
+
+                    addCourses(courses, extractedCourses);
+                } else {
+                    boolean hasNextPage = paging(driver, pageIndex);
+
+                    if (!hasNextPage) {
+                        jobLogService.addLog(
+                                crawlerJobLogId,
+                                "Đã đến trang cuối cùng"
+                        );
+                        break;
                     }
+
+                    List<Course> extractedCourses =
+                            extractTableData(wait);
+
+                    addCourses(courses, extractedCourses);
                 }
 
-                // bắt đầu từ trang 2 tới các trang tiếp theo
-                if (index != 0) {
-                    if (paging(driver, index)) {
-                        List<Course> data = extractTableData(wait);
-                        if (!ObjectUtils.isEmpty(data)) {
-                            courses.addAll(data);
-                        }
-                    } else break;
-                }
+                jobLogService.updateProgress(
+                        crawlerJobLogId,
+                        pageNumber,
+                        courses.size()
+                );
 
-                index++;
+                pageIndex++;
             }
 
-            if (!ObjectUtils.isEmpty(courses)) {
-                saveOrUpdate(courses);
-            }
+            jobLogService.addLog(
+                    crawlerJobLogId,
+                    "Hoàn thành crawl, bắt đầu lưu dữ liệu"
+            );
 
-            log.info("Crawl completed!");
-            driver.quit();
-            return BaseResponse.success("Lấy và cập nhật dữ liệu thành công");
+            int savedRecords = saveOrUpdate(courses);
+
+            log.info(
+                    "Crawl hoàn thành, tổng số={}, thêm/cập nhật={}",
+                    courses.size(),
+                    savedRecords
+            );
+
+            return new CrawlResult(
+                    courses.size(),
+                    savedRecords
+            );
         } catch (Exception e) {
-            // if catch -> still check and save all course has crawled
-            saveOrUpdate(courses);
+            log.error("Course crawler failed", e);
 
-            log.info(e.getMessage());
-            driver.quit();
-            return BaseResponse.internalServerError();
+            /*
+             * Nếu crawler lỗi giữa chừng thì vẫn lưu những học phần
+             * đã lấy được trước thời điểm xảy ra lỗi.
+             */
+            if (!courses.isEmpty()) {
+                try {
+                    int savedRecords = saveOrUpdate(courses);
+
+                    jobLogService.addLog(
+                            crawlerJobLogId,
+                            "Crawler bị lỗi nhưng đã lưu "
+                                    + savedRecords
+                                    + " bản ghi thu thập được trước đó"
+                    );
+                } catch (Exception saveException) {
+                    log.error(
+                            "Không thể lưu dữ liệu crawl tạm thời",
+                            saveException
+                    );
+                }
+            }
+
+            /*
+             * Bắt buộc throw exception để JobRunr nhận biết job thất bại
+             * và thực hiện retry.
+             */
+            throw new IllegalStateException(
+                    "Không thể crawl dữ liệu học phần HUST",
+                    e
+            );
+        } finally {
+            closeDriver(driver, crawlerJobLogId);
         }
     }
 
-
-    public List<Course> extractTableData(WebDriverWait wait) {
+    /**
+     * Lấy dữ liệu học phần trong trang hiện tại.
+     */
+    private List<Course> extractTableData(WebDriverWait wait) {
         List<Course> courses = new ArrayList<>();
-        try {
-            int rowSize = wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(
-                    By.xpath("//table[@id='MainContent_gvCoursesGrid_DXMainTable']/tbody/tr[@class='dxgvDataRow_SisTheme']")
-            )).size();
 
-            for (int i = 1; i <= rowSize; i++) {
-                Thread.sleep(1000);
-                List<WebElement> columns = wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(
-                        By.xpath(String.format("//table[@id='MainContent_gvCoursesGrid_DXMainTable']/tbody/tr[@class='dxgvDataRow_SisTheme'][%d]/td", i))
-                ));
+        try {
+            wait.until(
+                    ExpectedConditions.invisibilityOfElementLocated(
+                            By.id("MainContent_gvCoursesGrid_LD")
+                    )
+            );
+
+            List<WebElement> rows =
+                    wait.until(
+                            ExpectedConditions
+                                    .presenceOfAllElementsLocatedBy(
+                                            By.xpath(
+                                                    "//table[@id='MainContent_gvCoursesGrid_DXMainTable']"
+                                                            + "/tbody/tr[@class='dxgvDataRow_SisTheme']"
+                                            )
+                                    )
+                    );
+
+            int rowSize = rows.size();
+
+            log.info(
+                    "Trang hiện tại có {} học phần",
+                    rowSize
+            );
+
+            for (int rowIndex = 1;
+                 rowIndex <= rowSize;
+                 rowIndex++) {
 
                 /*
-                 * 0 ---> button click detail course and get course name by english (Tên tiếng anh của học phần)
-                 * 1 ---> Mã học phần
-                 * 2 ---> Tên học phần
-                 * 3 ---> Thời lượng
-                 * 4 ---> Số tín chỉ
-                 * 5 ---> TC học phí
-                 * 6 ---> Trọng số
+                 * Lấy lại danh sách column ở mỗi vòng vì DOM của trang
+                 * thay đổi sau khi mở chi tiết học phần.
                  */
+                List<WebElement> columns =
+                        getColumns(wait, rowIndex);
 
-                // Đợi loading div biến mất
-                wait.until(ExpectedConditions.invisibilityOfElementLocated(
-                        By.id("MainContent_gvCoursesGrid_LD")
-                ));
-                Thread.sleep(800);
+                if (columns.size() < 7) {
+                    throw new IllegalStateException(
+                            "Dòng " + rowIndex
+                                    + " không có đủ 7 cột dữ liệu"
+                    );
+                }
+
+                /*
+                 * 0: Nút mở chi tiết
+                 * 1: Mã học phần
+                 * 2: Tên học phần
+                 * 3: Thời lượng
+                 * 4: Số tín chỉ
+                 * 5: Tín chỉ học phí
+                 * 6: Trọng số
+                 */
+                wait.until(
+                        ExpectedConditions.invisibilityOfElementLocated(
+                                By.id("MainContent_gvCoursesGrid_LD")
+                        )
+                );
+
+                sleep(500);
+
                 columns.get(0).click();
-                Thread.sleep(800);
-                // phải get lại columns vì các phần tử column bị thay đổi sau khi click
-                columns = wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(
-                        By.xpath(String.format("//table[@id='MainContent_gvCoursesGrid_DXMainTable']/tbody/tr[@class='dxgvDataRow_SisTheme'][%d]/td", i))
-                ));
 
-                String englishCourseName = wait.until(ExpectedConditions.presenceOfElementLocated(
-                        By.xpath("//tr[@class='dxgvDetailRow_SisTheme']//td[contains(., 'Tên tiếng anh')]/b[2]")
-                )).getText();
+                wait.until(
+                        ExpectedConditions.invisibilityOfElementLocated(
+                                By.id("MainContent_gvCoursesGrid_LD")
+                        )
+                );
 
-                // Viện quản lý
-                String instituteManage = wait.until(ExpectedConditions.presenceOfElementLocated(
-                        By.xpath("//tr[@class='dxgvDetailRow_SisTheme']//td[contains(., 'Viện quản lý')]/b[4]")
-                )).getText();
+                sleep(500);
 
-                //Học phần điều kiện
-                String courseCondition = wait.until(ExpectedConditions.presenceOfElementLocated(
-                        By.xpath("//tr[@class='dxgvDetailRow_SisTheme']//td[contains(., 'Học phần điều kiện')]/b[1]")
-                )).getText();
+                /*
+                 * Sau khi click mở chi tiết, DOM đã thay đổi nên phải
+                 * lấy lại danh sách column.
+                 */
+                columns = getColumns(wait, rowIndex);
 
-                String courseCode = columns.get(1).getText();      // * 1 ---> Mã học phần
-                String courseName = columns.get(2).getText();       // * 2 ---> Tên học phần
-                String courseDuration = columns.get(3).getText();   // * 3 ---> Thời lượng
-                String courseCredit = columns.get(4).getText();     // * 4 ---> Số tín chỉ
-                String creditFee = columns.get(5).getText();       // * 5 ---> TC học phí
-                String courseWeight = columns.get(6).getText();       // * 6 ---> Trọng số
+                String englishCourseName =
+                        getTextOrEmpty(
+                                wait,
+                                "//tr[@class='dxgvDetailRow_SisTheme']"
+                                        + "//td[contains(., 'Tên tiếng anh')]/b[2]"
+                        );
+
+                String instituteManage =
+                        getTextOrEmpty(
+                                wait,
+                                "//tr[@class='dxgvDetailRow_SisTheme']"
+                                        + "//td[contains(., 'Viện quản lý')]/b[4]"
+                        );
+
+                String courseCondition =
+                        getTextOrEmpty(
+                                wait,
+                                "//tr[@class='dxgvDetailRow_SisTheme']"
+                                        + "//td[contains(., 'Học phần điều kiện')]/b[1]"
+                        );
+
+                String courseCode =
+                        columns.get(1).getText().trim();
+
+                String courseName =
+                        columns.get(2).getText().trim();
+
+                String courseDuration =
+                        columns.get(3).getText().trim();
+
+                String courseCredit =
+                        columns.get(4).getText().trim();
+
+                String creditFee =
+                        columns.get(5).getText().trim();
+
+                String courseWeight =
+                        columns.get(6).getText().trim();
 
                 Course course = Course.builder()
                         .name(courseName)
@@ -150,84 +294,382 @@ public class HustCourse {
                         .listCourseCondition(courseCondition)
                         .instituteManage(instituteManage)
                         .build();
+
                 courses.add(course);
 
-                System.out.printf(
-                        """
-                                 ----------------------------------------------------
-                                 Tên học phần: %s
-                                 Tên tiếng anh của học phần: %s
-                                 Mã học phần: %s
-                                 Thời lượng: %s
-                                 Số tín chỉ: %s
-                                 Tín chỉ học phí: %s
-                                 Trọng số: %s
-                                 Viện quản lý: %s
-                                 Học phần điều kiện: %s
-                                 ----------------------------------------------------
-                                %n"""
-                        , courseName, englishCourseName, courseCode, courseDuration, courseCredit, creditFee, courseWeight, instituteManage, courseCondition);
-
+                log.info(
+                        "Đã crawl học phần {} - {}",
+                        courseCode,
+                        courseName
+                );
             }
+
             return courses;
         } catch (Exception e) {
-            log.error("[ERROR-EXTRACT-TABLE-DATA]: {}", e.getMessage());
-            return null;
+            log.error(
+                    "[ERROR-EXTRACT-TABLE-DATA]",
+                    e
+            );
+
+            throw new IllegalStateException(
+                    "Không thể lấy dữ liệu bảng học phần",
+                    e
+            );
         }
     }
 
-    public Boolean paging(WebDriver driver, int index) {
-        if (index > 1) {
-            if (!driver.findElements(By.xpath("//b[@class='dxp-button dxp-disabledButton']")).isEmpty()) {
-                System.out.println("Trang cuối");
+    /**
+     * Chuyển sang trang tiếp theo.
+     *
+     * @return true nếu chuyển trang thành công, false nếu đã tới trang cuối
+     */
+    private boolean paging(
+            WebDriver driver,
+            int pageIndex
+    ) {
+        try {
+            /*
+             * Khi nút Next bị disabled nghĩa là đang ở trang cuối.
+             */
+            List<WebElement> disabledNextButtons =
+                    driver.findElements(
+                            By.xpath(
+                                    "//*[@id='MainContent_gvCoursesGrid_DXPagerBottom']"
+                                            + "/b[contains(@class,'dxp-disabledButton')]"
+                                            + "/img[@alt='Next']"
+                            )
+                    );
+
+            if (!disabledNextButtons.isEmpty()) {
+                log.info("Đã đến trang cuối");
                 return false;
             }
-        }
 
-        List<WebElement> elements = (driver.findElements(By.xpath(
-                "//*[@id='MainContent_gvCoursesGrid_DXPagerBottom']/b[@class='dxp-button']/img[@alt='Next']"
-        )));
-        elements.get(0).click();
-        return true;
-    }
+            List<WebElement> nextButtons =
+                    driver.findElements(
+                            By.xpath(
+                                    "//*[@id='MainContent_gvCoursesGrid_DXPagerBottom']"
+                                            + "/*[contains(@class,'dxp-button')]"
+                                            + "/img[@alt='Next']"
+                            )
+                    );
 
+            if (nextButtons.isEmpty()) {
+                log.info(
+                        "Không tìm thấy nút Next tại pageIndex={}",
+                        pageIndex
+                );
+                return false;
+            }
 
-    // ---> Check exist and add or update to db
-    public void saveOrUpdate(List<Course> courses) {
-        try {
-            List<Course> courseExist = courseRepository.findAll();
+            nextButtons.get(0).click();
 
-             /*
-                - check exist by contains has use method equals and hash code (custom method equals cannot check id)
-                - After checking (filter), if course does not exist but course code in this course still exist,
-                  the course has edited any field (name, code or etc...)
-                - ---> Update this course all field
+            /*
+             * Chờ loading của trang xuất hiện rồi biến mất.
              */
-            List<Course> newCourse = courses.stream().
-                    filter(course -> !courseExist.contains(course))
-                    .map(
-                            course -> {
-                                Course c = courseRepository.existsByCode(course.getCode());
-                                if (!ObjectUtils.isEmpty(c)) {
-                                    c.setName(course.getName());
-                                    c.setEnglishName(course.getEnglishName());
-                                    c.setDuration(course.getDuration());
-                                    c.setCredits(course.getCredits());
-                                    c.setCreditFee(course.getCreditFee());
-                                    c.setWeight(course.getWeight());
-                                    c.setListCourseCondition(course.getListCourseCondition());
-                                    c.setInstituteManage(course.getInstituteManage());
-                                    return c;
-                                }
-                                return course;
-                            }
-                    )
-                    .toList();
+            WebDriverWait wait =
+                    new WebDriverWait(
+                            driver,
+                            Duration.ofSeconds(30)
+                    );
 
-            courseRepository.saveAll(newCourse);
+            wait.until(
+                    ExpectedConditions.invisibilityOfElementLocated(
+                            By.id("MainContent_gvCoursesGrid_LD")
+                    )
+            );
+
+            sleep(500);
+
+            return true;
         } catch (Exception e) {
-            log.info("[ERROR-SAVE-TO-DB]: {}]", e.getMessage());
+            log.error(
+                    "Không thể chuyển sang trang tiếp theo",
+                    e
+            );
+
+            throw new IllegalStateException(
+                    "Không thể chuyển sang trang tiếp theo",
+                    e
+            );
         }
     }
 
+    /**
+     * Thêm dữ liệu crawl được vào danh sách tổng.
+     */
+    private void addCourses(
+            List<Course> courses,
+            List<Course> extractedCourses
+    ) {
+        if (!CollectionUtils.isEmpty(extractedCourses)) {
+            courses.addAll(extractedCourses);
+        }
+    }
+
+    /**
+     * Thêm mới hoặc cập nhật học phần dựa theo course code.
+     *
+     * @return số lượng bản ghi thực sự được thêm hoặc cập nhật
+     */
+    private int saveOrUpdate(List<Course> courses) {
+        if (CollectionUtils.isEmpty(courses)) {
+            log.info("Không có dữ liệu học phần để lưu");
+            return 0;
+        }
+
+        try {
+            /*
+             * Chuyển dữ liệu hiện tại trong MongoDB thành Map:
+             *
+             * key   = courseCode
+             * value = Course
+             *
+             * Nhờ vậy không cần query MongoDB từng học phần.
+             */
+            Map<String, Course> existingCourseMap =
+                    courseRepository.findAll()
+                            .stream()
+                            .collect(
+                                    Collectors.toMap(
+                                            Course::getCode,
+                                            Function.identity(),
+                                            (first, second) -> first
+                                    )
+                            );
+
+            List<Course> changedCourses =
+                    courses.stream()
+                            .map(crawledCourse -> {
+                                Course existingCourse =
+                                        existingCourseMap.get(
+                                                crawledCourse.getCode()
+                                        );
+
+                                /*
+                                 * Chưa tồn tại course code:
+                                 * trả về course mới để insert.
+                                 */
+                                if (existingCourse == null) {
+                                    log.info(
+                                            "Thêm mới học phần: {} - {}",
+                                            crawledCourse.getCode(),
+                                            crawledCourse.getName()
+                                    );
+
+                                    return crawledCourse;
+                                }
+
+                                /*
+                                 * Cùng course code và mọi dữ liệu giống nhau:
+                                 * trả về null để không update.
+                                 */
+                                if (!hasChanges(
+                                        existingCourse,
+                                        crawledCourse
+                                )) {
+                                    return null;
+                                }
+
+                                log.info(
+                                        "Cập nhật học phần: {} - {}",
+                                        crawledCourse.getCode(),
+                                        crawledCourse.getName()
+                                );
+
+                                /*
+                                 * Có ít nhất một trường thay đổi:
+                                 * cập nhật object đang tồn tại để giữ nguyên ID.
+                                 */
+                                updateCourse(
+                                        existingCourse,
+                                        crawledCourse
+                                );
+
+                                return existingCourse;
+                            })
+                            .filter(Objects::nonNull)
+                            .toList();
+
+            if (changedCourses.isEmpty()) {
+                log.info("Dữ liệu học phần không có thay đổi");
+                return 0;
+            }
+
+            courseRepository.saveAll(changedCourses);
+
+            log.info(
+                    "Đã thêm mới/cập nhật {} học phần",
+                    changedCourses.size()
+            );
+
+            return changedCourses.size();
+        } catch (Exception e) {
+            log.error("[ERROR-SAVE-TO-DB]", e);
+
+            throw new IllegalStateException(
+                    "Không thể lưu dữ liệu học phần vào MongoDB",
+                    e
+            );
+        }
+    }
+
+    private boolean hasChanges(
+            Course existingCourse,
+            Course crawledCourse
+    ) {
+        return !Objects.equals(
+                existingCourse.getName(),
+                crawledCourse.getName()
+        ) || !Objects.equals(
+                existingCourse.getEnglishName(),
+                crawledCourse.getEnglishName()
+        ) || !Objects.equals(
+                existingCourse.getDuration(),
+                crawledCourse.getDuration()
+        ) || !Objects.equals(
+                existingCourse.getCredits(),
+                crawledCourse.getCredits()
+        ) || !Objects.equals(
+                existingCourse.getCreditFee(),
+                crawledCourse.getCreditFee()
+        ) || !Objects.equals(
+                existingCourse.getWeight(),
+                crawledCourse.getWeight()
+        ) || !Objects.equals(
+                existingCourse.getListCourseCondition(),
+                crawledCourse.getListCourseCondition()
+        ) || !Objects.equals(
+                existingCourse.getInstituteManage(),
+                crawledCourse.getInstituteManage()
+        );
+    }
+
+    private void updateCourse(
+            Course existingCourse,
+            Course crawledCourse
+    ) {
+        existingCourse.setName(
+                crawledCourse.getName()
+        );
+
+        existingCourse.setEnglishName(
+                crawledCourse.getEnglishName()
+        );
+
+        existingCourse.setDuration(
+                crawledCourse.getDuration()
+        );
+
+        existingCourse.setCredits(
+                crawledCourse.getCredits()
+        );
+
+        existingCourse.setCreditFee(
+                crawledCourse.getCreditFee()
+        );
+
+        existingCourse.setWeight(
+                crawledCourse.getWeight()
+        );
+
+        existingCourse.setListCourseCondition(
+                crawledCourse.getListCourseCondition()
+        );
+
+        existingCourse.setInstituteManage(
+                crawledCourse.getInstituteManage()
+        );
+    }
+
+    /**
+     * Lấy lại danh sách cột của một dòng.
+     */
+    private List<WebElement> getColumns(
+            WebDriverWait wait,
+            int rowIndex
+    ) {
+        return wait.until(
+                ExpectedConditions.presenceOfAllElementsLocatedBy(
+                        By.xpath(
+                                String.format(
+                                        "//table[@id='MainContent_gvCoursesGrid_DXMainTable']"
+                                                + "/tbody/tr[@class='dxgvDataRow_SisTheme'][%d]/td",
+                                        rowIndex
+                                )
+                        )
+                )
+        );
+    }
+
+    /**
+     * Lấy text của element.
+     *
+     * Nếu trường dữ liệu chi tiết không tồn tại thì trả chuỗi rỗng,
+     * không làm hỏng toàn bộ job crawler.
+     */
+    private String getTextOrEmpty(
+            WebDriverWait wait,
+            String xpath
+    ) {
+        try {
+            WebElement element =
+                    wait.until(
+                            ExpectedConditions.presenceOfElementLocated(
+                                    By.xpath(xpath)
+                            )
+                    );
+
+            return element.getText().trim();
+        } catch (Exception e) {
+            log.warn(
+                    "Không lấy được dữ liệu từ xpath: {}",
+                    xpath
+            );
+
+            return "";
+        }
+    }
+
+    /**
+     * Đóng Selenium WebDriver an toàn.
+     */
+    private void closeDriver(
+            WebDriver driver,
+            String crawlerJobLogId
+    ) {
+        if (driver == null) {
+            return;
+        }
+
+        try {
+            driver.quit();
+
+            jobLogService.addLog(
+                    crawlerJobLogId,
+                    "Đã đóng Selenium WebDriver"
+            );
+        } catch (Exception e) {
+            log.warn(
+                    "Không thể đóng Selenium WebDriver",
+                    e
+            );
+        }
+    }
+
+    /**
+     * Sleep và giữ lại trạng thái interrupt của thread.
+     */
+    private void sleep(long milliseconds) {
+        try {
+            Thread.sleep(milliseconds);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new IllegalStateException(
+                    "Crawler thread đã bị interrupt",
+                    e
+            );
+        }
+    }
 }
