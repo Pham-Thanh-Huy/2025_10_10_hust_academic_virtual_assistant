@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface ChatMessageRepository extends MongoRepository<ChatMessage, String> {
@@ -19,4 +20,7 @@ public interface ChatMessageRepository extends MongoRepository<ChatMessage, Stri
 
     long countByChatAtBetween(LocalDateTime start, LocalDateTime end);
 
+    List<ChatMessage> findByChatAtBetween(LocalDateTime start, LocalDateTime end);
+
+    List<ChatMessage> findTop4ByOrderByChatAtDesc();
 }

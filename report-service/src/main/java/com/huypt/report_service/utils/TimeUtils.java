@@ -1,32 +1,50 @@
 package com.huypt.report_service.utils;
 
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.ZoneId;
 
 public class TimeUtils {
 
-    public static TimeRange today(){
+    private static final ZoneId VIETNAM_ZONE =
+            ZoneId.of("Asia/Ho_Chi_Minh");
+
+    public static TimeRange today() {
+        LocalDate today = LocalDate.now(VIETNAM_ZONE);
+
         return new TimeRange(
-                LocalDate.now().atStartOfDay(),
-                LocalDate.now().atTime(LocalTime.MAX)
+                today.atStartOfDay(),
+                today.plusDays(1).atStartOfDay()
         );
     }
 
-    public static TimeRange thisWeek(){
+    public static TimeRange thisWeek() {
+        LocalDate today = LocalDate.now(VIETNAM_ZONE);
+        LocalDate monday = today.with(DayOfWeek.MONDAY);
+
         return new TimeRange(
-                LocalDate.now().with(DayOfWeek.MONDAY).atStartOfDay(),
-                LocalDateTime.now().with(DayOfWeek.SUNDAY).toLocalDate().atTime(LocalTime.MAX)
+                monday.atStartOfDay(),
+                monday.plusWeeks(1).atStartOfDay()
+        );
+    }
+
+    public static TimeRange thisMonth() {
+        LocalDate today = LocalDate.now(VIETNAM_ZONE);
+        LocalDate firstDay = today.withDayOfMonth(1);
+
+        return new TimeRange(
+                firstDay.atStartOfDay(),
+                firstDay.plusMonths(1).atStartOfDay()
         );
     }
 
 
-    public static TimeRange thisMonth(){
-        LocalDate now = LocalDate.now();
+    public static TimeRange thisYear(){
+        LocalDate today = LocalDate.now(VIETNAM_ZONE);
         return new TimeRange(
-                now.withDayOfMonth(1).atStartOfDay(),
-                now.withDayOfMonth(now.lengthOfMonth()).atTime(LocalTime.MAX)
+                today.withDayOfYear(1).atStartOfDay(),
+                today.withDayOfYear(1).plusYears(1).atStartOfDay()
         );
     }
 }
