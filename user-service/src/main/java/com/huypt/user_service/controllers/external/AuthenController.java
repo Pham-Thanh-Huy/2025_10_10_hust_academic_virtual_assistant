@@ -39,4 +39,12 @@ public class AuthenController extends BaseController {
         CommonResponse<Map<String, Object>> response = authenService.login(loginRequest);
         return baseControllerResponse(response);
     }
+
+
+    @Operation(summary = "API Đăng nhập")
+    @PostMapping("/login-cms")
+    public ResponseEntity<CommonResponse<Map<String, Object>>> loginCMS(@RequestBody @Valid LoginRequest loginRequest){
+        CommonResponse<Map<String, Object>> response = authenService.loginCMS(loginRequest);
+        return baseControllerResponse(response);
+    }
 }

@@ -110,6 +110,36 @@ public class AuthenService {
     }
 
 
+    public CommonResponse<Map<String, Object>> loginCMS(LoginRequest request) {
+        try {
+            User userExistByUsername = userRepository.findByUsername(request.getUsername()).orElse(null);
+            if (ObjectUtils.isEmpty(userExistByUsername)) {
+                return CommonResponse.badRequest(null, Constant.USERNAME_OR_PASSWORD_IS_NOT_CORRECT);
+            }
+
+            if (!bCryptPasswordEncoder.matches(request.getPassword(), userExistByUsername.getPassword())) {
+                return CommonResponse.badRequest(null, Constant.USERNAME_OR_PASSWORD_IS_NOT_CORRECT);
+            }
+
+            //Kiểm tra xem role có phải user không
+            for(Role role : userExistByUsername.getRoles()){
+                if(role.getName().equalsIgnoreCase("user")) return CommonResponse.badRequest(null,
+                        "Tài khoản này không có quyền login vào tác vụ này");
+            }
+
+
+            String token = jwtTokenProvider.generateToken(request.getUsername());
+            Map<String, Object> response = Map.of("token", token);
+
+            return CommonResponse.success(response, "Login success!");
+        } catch (Exception e) {
+            log.error("[ERROR-TO-LOGIN] {}", e.getMessage());
+            return CommonResponse.internalServerError(null, null);
+        }
+    }
+
+
+
 
     /*
         -------> LIST API INTERNAL
