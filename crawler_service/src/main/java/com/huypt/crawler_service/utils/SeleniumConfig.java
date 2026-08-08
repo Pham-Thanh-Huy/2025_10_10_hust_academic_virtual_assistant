@@ -20,8 +20,20 @@ public class SeleniumConfig {
 
     public static WebDriver initWebDriver() {
         ChromeOptions options = new ChromeOptions();
-        options.addArguments("--start-maximized");
-//        options.addArguments("--headless=new");
+        options.addArguments(
+                "--headless=new",
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--disable-extensions",
+                "--disable-background-networking",
+                "--disable-default-apps",
+                "--disable-sync",
+                "--disable-translate",
+                "--mute-audio",
+                "--no-first-run",
+                "--window-size=1280,720"
+        );
         return new ChromeDriver(options);
     }
 
@@ -33,8 +45,20 @@ public class SeleniumConfig {
         }
         try {
             ChromeOptions options = new ChromeOptions();
-            options.addArguments("--start-maximized");
-//            options.addArguments("--headless=new");
+            options.addArguments(
+                    "--headless=new",
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                    "--disable-extensions",
+                    "--disable-background-networking",
+                    "--disable-default-apps",
+                    "--disable-sync",
+                    "--disable-translate",
+                    "--mute-audio",
+                    "--no-first-run",
+                    "--window-size=1280,720"
+            );
 
             // GET FILE PROXY
             options.addExtensions(
