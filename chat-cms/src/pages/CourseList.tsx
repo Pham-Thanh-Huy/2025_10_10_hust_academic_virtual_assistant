@@ -90,11 +90,7 @@ export default function CourseList() {
         <div className="relative flex h-12 items-center rounded-xl border border-gray-100 bg-white shadow-sm transition focus-within:border-red-200 focus-within:ring-2 focus-within:ring-red-100">
           <Filter size={17} className="ml-4 text-gray-400" />
 
-          <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as 'name' | 'code')}
-              className="h-full appearance-none bg-transparent px-3 pr-10 text-sm text-gray-700 outline-none"
-          >
+          <select value={filterType} onChange={(e) => setFilterType(e.target.value as 'name' | 'code')} className="h-full appearance-none bg-transparent px-3 pr-10 text-sm text-gray-700 outline-none">
             <option value="name">Tên học phần</option>
             <option value="code">Mã học phần</option>
           </select>

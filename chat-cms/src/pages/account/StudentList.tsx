@@ -190,11 +190,7 @@ export default function StudentList() {
             <label className="mb-2 block text-sm font-semibold text-gray-600">Trạng thái</label>
 
             <div className="relative">
-              <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="h-12 w-full appearance-none rounded-xl border border-gray-100 bg-white px-4 pr-10 text-sm text-gray-700 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100"
-              >
+              <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-12 w-full appearance-none rounded-xl border border-gray-100 bg-white px-4 pr-10 text-sm text-gray-700 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100">
                 <option value="ALL">Tất cả trạng thái</option>
                 <option value="ACTIVE">Đang hoạt động</option>
                 <option value="LOCKED">Đã khóa</option>
@@ -210,11 +206,7 @@ export default function StudentList() {
 
         {/* SEARCH BUTTON */}
         <div className="mt-5 flex justify-end border-t border-gray-100 pt-5">
-          <button
-              type="button"
-              onClick={handleSearch}
-              className="inline-flex h-12 min-w-[180px] items-center justify-center gap-2 rounded-xl bg-red-700 px-7 font-semibold text-white shadow-sm transition hover:bg-red-800"
-          >
+          <button type="button" onClick={handleSearch} className="inline-flex h-12 min-w-[180px] items-center justify-center gap-2 rounded-xl bg-red-700 px-7 font-semibold text-white shadow-sm transition hover:bg-red-800">
             <Search size={18} />
             Tìm kiếm
           </button>
