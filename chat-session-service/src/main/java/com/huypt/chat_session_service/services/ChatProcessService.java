@@ -97,7 +97,7 @@ public class ChatProcessService {
                     .voiceAnswer(Function.convertMarkdownToVoice(request.getAnswer()))
                     .model(request.getModel())
                     .sequence(sequence + 1)
-                    .chatAt(LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")))
+                    .chatAt(LocalDateTime.now())
                     .build();
             chatMessage = chatMessageRepository.save(chatMessage);
 
