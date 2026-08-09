@@ -4,5 +4,6 @@ public enum CrawlerJobStatus {
     QUEUED,
     RUNNING,
     SUCCESS,
-    FAILED
+    FAILED,
+    CANCELLED
 }

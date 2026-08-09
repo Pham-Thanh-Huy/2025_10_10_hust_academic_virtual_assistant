@@ -29,6 +29,23 @@ public class CrawlerJobController {
                 .body(jobLog);
     }
 
+    @PostMapping("/{id}/stop")
+    public ResponseEntity<CrawlerJobLog> stopJob(
+            @PathVariable String id
+    ) {
+        return ResponseEntity.ok(
+                jobService.stop(id)
+        );
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteJob(
+            @PathVariable String id
+    ) {
+        jobService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     public ResponseEntity<List<CrawlerJobLog>> getJobs() {
         return ResponseEntity.ok(

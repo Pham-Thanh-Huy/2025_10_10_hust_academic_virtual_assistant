@@ -1,27 +1,20 @@
 package com.huypt.crawler_service.utils;
 
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
-
-import java.io.File;
-import java.util.Objects;
 
 @Slf4j
 @RequiredArgsConstructor
 public class SeleniumConfig {
 
-
-    public static WebDriver initWebDriver() {
+    private static ChromeOptions getChromeOptions() {
         ChromeOptions options = new ChromeOptions();
+
         options.addArguments(
-                "--headless=new",
+                "--headless",
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
@@ -34,42 +27,24 @@ public class SeleniumConfig {
                 "--no-first-run",
                 "--window-size=1280,720"
         );
-        return new ChromeDriver(options);
+
+        return options;
     }
 
+    public static WebDriver initWebDriver() {
+        return new ChromeDriver(getChromeOptions());
+    }
 
-    // if device has proxy and cannot automation chrome driver
     public static WebDriver initWebDriver(Boolean proxies) {
-        if (proxies == false) {
+        if (!Boolean.TRUE.equals(proxies)) {
             return initWebDriver();
         }
-        try {
-            ChromeOptions options = new ChromeOptions();
-            options.addArguments(
-                    "--headless=new",
-                    "--no-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-gpu",
-                    "--disable-extensions",
-                    "--disable-background-networking",
-                    "--disable-default-apps",
-                    "--disable-sync",
-                    "--disable-translate",
-                    "--mute-audio",
-                    "--no-first-run",
-                    "--window-size=1280,720"
-            );
 
-            // GET FILE PROXY
-            options.addExtensions(
-                    FileUtil.getResourceFile("proxy.zip")
-            );
-            return new ChromeDriver(options);
+        try {
+            return new ChromeDriver(getChromeOptions());
         } catch (Exception e) {
-            log.error("[ERROR-INIT-WEBDRIVER-HAS-PROXY] {}", e.getMessage());
+            log.error("[ERROR-INIT-WEBDRIVER-HAS-PROXY]", e);
             return null;
         }
-
     }
-
 }

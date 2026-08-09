@@ -43,5 +43,12 @@ jobrunr:
 
 crawler:
   course:
-    cron: "0 0 * * *"
+    cron: "0 0 0 * * MON"
     zone-id: "Asia/Ho_Chi_Minh"
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: http://localhost:8671/eureka/

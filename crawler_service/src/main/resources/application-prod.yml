@@ -44,9 +44,9 @@ jobrunr:
 
   dashboard:
     enabled: true
-    port: 8000
+    port: 8101
 
 crawler:
   course:
-    cron: "0 0 * * *"
+    cron: "0 0 0 * * MON"
     zone-id: "Asia/Ho_Chi_Minh"

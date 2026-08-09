@@ -11,38 +11,52 @@ import java.util.Objects;
 @Builder
 @Entity
 public class Course {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    @Column(columnDefinition = "TEXT")
     private String name; // Tên học phần
 
-    @Column(name = "english_name")
-    private String englishName; // Tên học phần tiếng anh
+    @Column(name = "english_name", columnDefinition = "TEXT")
+    private String englishName; // Tên học phần tiếng Anh
 
+    @Column(columnDefinition = "TEXT")
     private String code; // Mã học phần
 
+    @Column(columnDefinition = "TEXT")
     private String duration; // Thời lượng
 
+    @Column(columnDefinition = "TEXT")
     private String credits; // Số tín chỉ
 
-    @Column(name = "credit_fee")
+    @Column(name = "credit_fee", columnDefinition = "TEXT")
     private String creditFee; // TC học phí
 
-    private String weight; // trọng số
+    @Column(columnDefinition = "TEXT")
+    private String weight; // Trọng số
 
-    @Column(name = "list_course_condtion")
+    @Column(
+            name = "list_course_condition",
+            columnDefinition = "TEXT"
+    )
     private String listCourseCondition; // Danh sách học phần điều kiện
 
-    @Column(name = "instituteManage")
+    @Column(
+            name = "instituteManage",
+            columnDefinition = "TEXT"
+    )
     private String instituteManage; // Viện quản lý
 
-
-    // Custom equals not check id
+    // Custom equals không kiểm tra id
     @Override
     public boolean equals(Object o) {
+        if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+
         Course course = (Course) o;
+
         return Objects.equals(name, course.name)
                 && Objects.equals(code, course.code)
                 && Objects.equals(englishName, course.englishName)
@@ -50,12 +64,28 @@ public class Course {
                 && Objects.equals(credits, course.credits)
                 && Objects.equals(creditFee, course.creditFee)
                 && Objects.equals(weight, course.weight)
-                && Objects.equals(listCourseCondition, course.listCourseCondition)
-                && Objects.equals(instituteManage, course.instituteManage);
+                && Objects.equals(
+                listCourseCondition,
+                course.listCourseCondition
+        )
+                && Objects.equals(
+                instituteManage,
+                course.instituteManage
+        );
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, englishName, code, duration, credits, creditFee, weight, listCourseCondition, instituteManage);
+        return Objects.hash(
+                name,
+                englishName,
+                code,
+                duration,
+                credits,
+                creditFee,
+                weight,
+                listCourseCondition,
+                instituteManage
+        );
     }
 }
