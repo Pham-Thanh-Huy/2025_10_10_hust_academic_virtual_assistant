@@ -9,8 +9,8 @@ interface SidebarProps {
 const menus = [
     {name:"Dashboard", icon:LayoutDashboard, path:"/"},
     {name:"Danh sách học phần", icon:BookOpen, path:"/courses"},
+    {name:"Tác vụ đồng bộ", icon:Activity, path:"/jobs"},
     {name:"Quản lý sinh viên", icon:Users, path:"/students"},
-    {name:"Tác vụ đồng bộ", icon:Activity, path:"/jobs"}
 ];
 
 

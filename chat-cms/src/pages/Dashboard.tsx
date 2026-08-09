@@ -283,10 +283,7 @@ export default function Dashboard() {
                     />
 
                     <Tooltip
-                        formatter={(value: number | string | undefined) => [
-                          `${formatNumber(Number(value ?? 0))} lượt`,
-                          'Tổng số lượt hỏi đáp',
-                        ]}
+                        formatter={(value) => [`${formatNumber(Number(value ?? 0))} lượt`, 'Tổng số lượt hỏi đáp'] as [string, string]}
                         labelFormatter={(label) => `Thời gian: ${label}`}
                     />
 
