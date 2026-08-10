@@ -1,0 +1,128 @@
+[{
+  "_id": {
+    "$oid": "6a75fc090031ec44208f2859"
+  },
+  "title": "07/08/2026 22:38:49 Đoạn hội thoại mới",
+  "status": "ACTIVE",
+  "username": "huy.pt210154P@sis.hust.edu.vn",
+  "lastMessageAt": {
+    "$date": "2026-08-07T15:38:49.550Z"
+  },
+  "totalMessage": 3,
+  "createdAt": {
+    "$date": "2026-08-07T15:38:49.550Z"
+  },
+  "_class": "com.huypt.chat_session_service.entities.mongo.ChatSession"
+},
+{
+  "_id": {
+    "$oid": "6a769ded0031ec44208f285d"
+  },
+  "title": "08/08/2026 10:09:33 Đoạn hội thoại mới",
+  "status": "ACTIVE",
+  "username": "huy.pt210154P@sis.hust.edu.vn",
+  "lastMessageAt": {
+    "$date": "2026-08-08T03:09:33.310Z"
+  },
+  "totalMessage": 1,
+  "createdAt": {
+    "$date": "2026-08-08T03:09:33.310Z"
+  },
+  "_class": "com.huypt.chat_session_service.entities.mongo.ChatSession"
+},
+{
+  "_id": {
+    "$oid": "6a76a7f70031ec44208f285f"
+  },
+  "title": "08/08/2026 10:52:23 Đoạn hội thoại mới",
+  "status": "ACTIVE",
+  "username": "dothaochi1994@gmail.com",
+  "lastMessageAt": {
+    "$date": "2026-08-08T03:52:23.179Z"
+  },
+  "totalMessage": 2,
+  "createdAt": {
+    "$date": "2026-08-08T03:52:23.179Z"
+  },
+  "_class": "com.huypt.chat_session_service.entities.mongo.ChatSession"
+},
+{
+  "_id": {
+    "$oid": "6a76b17e0031ec44208f2862"
+  },
+  "title": "08/08/2026 11:33:02 Đoạn hội thoại mới",
+  "status": "ACTIVE",
+  "username": "huy.pt210154P@sis.hust.edu.vn",
+  "lastMessageAt": {
+    "$date": "2026-08-08T04:33:02.034Z"
+  },
+  "totalMessage": 9,
+  "createdAt": {
+    "$date": "2026-08-08T04:33:02.034Z"
+  },
+  "_class": "com.huypt.chat_session_service.entities.mongo.ChatSession"
+},
+{
+  "_id": {
+    "$oid": "6a7970c90031ec44208f286c"
+  },
+  "title": "10/08/2026 13:33:45 Đoạn hội thoại mới",
+  "status": "ACTIVE",
+  "username": "phaman",
+  "lastMessageAt": {
+    "$date": "2026-08-10T06:33:45.856Z"
+  },
+  "totalMessage": 1,
+  "createdAt": {
+    "$date": "2026-08-10T06:33:45.856Z"
+  },
+  "_class": "com.huypt.chat_session_service.entities.mongo.ChatSession"
+},
+{
+  "_id": {
+    "$oid": "6a79d3160031ec44208f286e"
+  },
+  "title": "10/08/2026 20:33:10 Đoạn hội thoại mới",
+  "status": "DELETED",
+  "username": "huy.pt210154P@sis.hust.edu.vn",
+  "lastMessageAt": {
+    "$date": "2026-08-10T13:33:10.065Z"
+  },
+  "totalMessage": 1,
+  "createdAt": {
+    "$date": "2026-08-10T13:33:10.065Z"
+  },
+  "_class": "com.huypt.chat_session_service.entities.mongo.ChatSession"
+},
+{
+  "_id": {
+    "$oid": "6a79d3330031ec44208f286f"
+  },
+  "title": "10/08/2026 20:33:39 Đoạn hội thoại mới",
+  "status": "DELETED",
+  "username": "huy.pt210154P@sis.hust.edu.vn",
+  "lastMessageAt": {
+    "$date": "2026-08-10T13:33:39.011Z"
+  },
+  "totalMessage": 1,
+  "createdAt": {
+    "$date": "2026-08-10T13:33:39.011Z"
+  },
+  "_class": "com.huypt.chat_session_service.entities.mongo.ChatSession"
+},
+{
+  "_id": {
+    "$oid": "6a79d35b0031ec44208f2870"
+  },
+  "title": "10/08/2026 20:34:19 Đoạn hội thoại mới",
+  "status": "ACTIVE",
+  "username": "huy.pt210154P@sis.hust.edu.vn",
+  "lastMessageAt": {
+    "$date": "2026-08-10T13:34:19.336Z"
+  },
+  "totalMessage": 3,
+  "createdAt": {
+    "$date": "2026-08-10T13:34:19.336Z"
+  },
+  "_class": "com.huypt.chat_session_service.entities.mongo.ChatSession"
+}]

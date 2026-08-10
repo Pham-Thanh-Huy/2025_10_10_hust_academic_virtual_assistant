@@ -1,75 +1,200 @@
-version: "3.7"
+version: '3.7'
 
 services:
-  eureka-server:
+  hust-assistant-eureka-server:
     build:
       context: ./eureka-server
       dockerfile: Dockerfile
-    image: hust_assistant/eureka-sever:${EUREKA_SERVER:-latest}
+    image: hust-assistant/eureka-server:local
+    container_name: hust-assistant-eureka-server
     ports:
-      - "8671:8671"
-    container_name: eureka-server
+      - '8671:8671'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8671/actuator/health']
+      interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
-      - hust_assistant_network
+      - hust-assistant-network
 
-  cloud-gateway:
+  hust-assistant-cloud-gateway:
     build:
       context: ./cloud-gateway
       dockerfile: Dockerfile
-    image: hust_assistant/cloud-gateway:${CLOUD_GATEWAY:-latest}
+    image: hust-assistant/cloud-gateway:local
+    container_name: hust-assistant-cloud-gateway
     ports:
-      - "9898:9898"
-    container_name: cloud-gateway
+      - '9898:9898'
+    depends_on:
+      hust-assistant-eureka-server:
+        condition: service_healthy
     networks:
-      - hust_assistant_network
+      - hust-assistant-network
 
-  user-service:
+  hust-assistant-user-service:
     build:
       context: ./user-service
       dockerfile: Dockerfile
-    image: hust_assistant/user-service:${USER_SERVICE:-latest}
-    ports:
-      - "8080:8080"
-    container_name: user-service
-    networks:
-      - hust_assistant_network
+    image: hust-assistant/user-service:local
+    container_name: hust-assistant-user-service
     depends_on:
-      mysql:
+      hust-assistant-eureka-server:
         condition: service_healthy
+      hust-assistant-mysql-container:
+        condition: service_healthy
+    networks:
+      - hust-assistant-network
 
-  authen-service:
+  hust-assistant-authen-service:
     build:
       context: ./authen-service
       dockerfile: Dockerfile
-    image: hust_assistant/authen-service:${AUTHEN_SERVICE:-latest}
-    ports:
-      - "8081:8081"
-    container_name: authen-service
+    image: hust-assistant/authen-service:local
+    container_name: hust-assistant-authen-service
+    depends_on:
+      hust-assistant-eureka-server:
+        condition: service_healthy
+      hust-assistant-mysql-container:
+        condition: service_healthy
     networks:
-      - hust_assistant_network
+      - hust-assistant-network
 
-  mysql:
-    image: mysql:latest
-    container_name: mysql-container
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: hust_assistant
-    volumes:
-      - hust-assistant-data:/var/lib/mysql
+  hust-assistant-chat-session-service:
+    build:
+      context: ./chat-session-service
+      dockerfile: Dockerfile
+    image: hust-assistant/chat-session-service:local
+    container_name: hust-assistant-chat-session-service
+    depends_on:
+      hust-assistant-eureka-server:
+        condition: service_healthy
+      hust-assistant-mongodb-container:
+        condition: service_healthy
+    networks:
+      - hust-assistant-network
+
+  hust-assistant-report-service:
+    build:
+      context: ./report-service
+      dockerfile: Dockerfile
+    image: hust-assistant/report-service:local
+    container_name: hust-assistant-report-service
+    depends_on:
+      hust-assistant-eureka-server:
+        condition: service_healthy
+      hust-assistant-mysql-container:
+        condition: service_healthy
+      hust-assistant-mongodb-container:
+        condition: service_healthy
+    networks:
+      - hust-assistant-network
+
+  hust-assistant-chat-service:
+    build:
+      context: ./chat-service
+      dockerfile: Dockerfile
+    image: hust-assistant/chat-service:local
+    container_name: hust-assistant-chat-service
     ports:
-      - "3307:3306"
+      - '1923:1923'
+    env_file:
+      - ./chat-service/.env
+    depends_on:
+      hust-assistant-eureka-server:
+        condition: service_healthy
+      hust-assistant-mysql-container:
+        condition: service_healthy
+      hust-assistant-mongodb-container:
+        condition: service_healthy
+      hust-assistant-chroma-db-container:
+        condition: service_started
+    networks:
+      - hust-assistant-network
+
+  hust-assistant-crawler-service:
+    build:
+      context: ./crawler_service
+      dockerfile: Dockerfile
+    image: hust-assistant/crawler-service:local
+    container_name: hust-assistant-crawler-service
+    ports:
+      - '8101:8101'
+    depends_on:
+      hust-assistant-eureka-server:
+        condition: service_healthy
+      hust-assistant-mysql-container:
+        condition: service_healthy
+      hust-assistant-mongodb-container:
+        condition: service_healthy
+      hust-assistant-chroma-db-container:
+        condition: service_started
+    networks:
+      - hust-assistant-network
+
+  hust-assistant-chat-app:
+    build:
+      context: ./chat-app
+      dockerfile: Dockerfile
+    image: hust-assistant/chat-app:local
+    container_name: hust-assistant-chat-app
+    ports:
+      - '5173:5173'
+    networks:
+      - hust-assistant-network
+
+  hust-assistant-mysql-container:
+    image: mysql:latest
+    container_name: hust-assistant-mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: tla-hust!2026
+      MYSQL_DATABASE: hust_assistant
+    ports:
+      - '3307:3306'
+    volumes:
+      - hust-assistant-mysql-data:/var/lib/mysql
     healthcheck:
-      test: [ "CMD", "mysql", "-h", "127.0.0.1", "-uroot", "-proot", "-e", "SELECT 1" ]
+      test: ['CMD', 'mysql', '-h', '127.0.0.1', '-uroot', '-proot', '-e', 'SELECT 1']
       interval: 10s
       timeout: 30s
       retries: 5
       start_period: 30s
     networks:
-      - hust_assistant_network
+      - hust-assistant-network
+
+  hust-assistant-mongodb-container:
+    image: mongo:latest
+    container_name: hust-assistant-mongodb-container
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: tla-hust!2026
+    ports:
+      - '27018:27017'
+    volumes:
+      - hust-assistant-mongodb-data:/data/db
+    healthcheck:
+      test: ['CMD-SHELL', "mongosh --quiet --host localhost --port 27017 -u root -p root --authenticationDatabase admin --eval 'db.adminCommand({ ping: 1 }).ok' | grep 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - hust-assistant-network
+
+  hust-assistant-chroma-db-container:
+    image: chromadb/chroma:latest
+    container_name: hust-assistant-chroma-db-container
+    ports:
+      - '8000:8000'
+    volumes:
+      - hust-assistant-chroma-data:/data
+    networks:
+      - hust-assistant-network
 
 volumes:
-  hust-assistant-data:
-    external: true
+  hust-assistant-mysql-data:
+  hust-assistant-mongodb-data:
+  hust-assistant-chroma-data:
 
 networks:
-  hust_assistant_network:
+  hust-assistant-network:
+    driver: bridge
