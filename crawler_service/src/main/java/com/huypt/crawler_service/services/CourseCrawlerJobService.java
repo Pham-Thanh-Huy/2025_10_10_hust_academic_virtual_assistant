@@ -19,7 +19,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CourseCrawlerJobService {
 
-    private static final String JOB_NAME = "COURSE_CRAWLER";
+    private static final String JOB_NAME = "Thu thập dữ liệu học phần";
 
     private final JobScheduler jobScheduler;
     private final CourseCrawlerJob courseCrawlerJob;
