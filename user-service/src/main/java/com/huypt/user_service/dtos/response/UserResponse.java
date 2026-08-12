@@ -1,5 +1,6 @@
 package com.huypt.user_service.dtos.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,6 +27,7 @@ public class UserResponse {
 
     private int age;
 
+    @JsonFormat(pattern = "dd/MM/yyyy")
     private LocalDate birthOfDate;
 
     private List<String> roleName;

@@ -25,9 +25,4 @@ public class CourseController {
         return new ResponseEntity<>(response, HttpStatusCode.valueOf(response.getMessage().getStatus()));
     }
 
-    @GetMapping("/detail/{id}")
-    public ResponseEntity<BaseResponse<Course>> listCourse(@PathVariable Integer id){
-        BaseResponse<Course> response = courseService.getDetailCourse(id);
-        return new ResponseEntity<>(response, HttpStatusCode.valueOf(response.getMessage().getStatus()));
-    }
 }

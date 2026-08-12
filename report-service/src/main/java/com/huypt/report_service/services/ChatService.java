@@ -9,6 +9,7 @@ import com.huypt.report_service.repositories.mongo.ChatMessageRepository;
 import com.huypt.report_service.repositories.mongo.ChatSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.Document;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -36,8 +37,18 @@ public class ChatService {
                                                      LocalDateTime start, LocalDateTime end, Pageable pageable) {
         try {
             List<AggregationOperation> operations = new ArrayList<>();
+            operations.add(context -> new Document("$addFields",
+                    new Document("sessionObjectId",
+                            new Document("$convert",
+                                    new Document("input", "$sessionId")
+                                            .append("to", "objectId")
+                                            .append("onError", null)
+                                            .append("onNull", null)
+                            )
+                    )
+            ));
             operations.add(
-                    Aggregation.lookup("ChatSession", "sessionId", "_id", "session")
+                    Aggregation.lookup("ChatSession", "sessionObjectId", "_id", "session")
             );
 
             operations.add(

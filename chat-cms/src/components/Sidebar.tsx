@@ -1,4 +1,4 @@
-import {Activity, BookOpen, LayoutDashboard, Users, X} from "lucide-react";
+import {Activity, BookOpen, LayoutDashboard, MessageSquareText, Users, X} from "lucide-react";
 import {useNavigate} from "react-router-dom";
 
 interface SidebarProps {
@@ -10,6 +10,7 @@ const menus = [
     {name: "Dashboard", icon: LayoutDashboard, path: "/"},
     {name: "Danh sách học phần", icon: BookOpen, path: "/courses"},
     {name: "Tác vụ đồng bộ", icon: Activity, path: "/jobs"},
+    { name: 'Lịch sử chat', icon: MessageSquareText, path: '/chat-history' },
     {name: "Quản lý sinh viên", icon: Users, path: "/students"},
 ];
 

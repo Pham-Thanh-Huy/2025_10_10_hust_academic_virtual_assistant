@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import StudentList from './pages/account/StudentList';
 import JobList from './pages/jobs/JobList';
 import Profile from "./pages/Profile.tsx";
+import ChatHistoryList from "./pages/chat-history/ChatHistoryList.tsx";
 
 function App() {
     return (
@@ -22,6 +23,7 @@ function App() {
                         <Route path="/courses" element={<Layout><CourseList /></Layout>} />
                         <Route path="/students" element={<Layout><StudentList /></Layout>} />
                         <Route path="/jobs" element={<Layout><JobList /></Layout>} />
+                        <Route path="/chat-history" element={<Layout><ChatHistoryList /></Layout>} />
                         <Route path="/profile" element={<Layout><Profile /></Layout>} />
                     </Route>
                 </Routes>

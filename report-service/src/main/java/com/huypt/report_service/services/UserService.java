@@ -15,9 +15,9 @@ import java.time.LocalDate;
 public class UserService {
     private final UserRepository userRepository;
 
-    public BaseResponse<Page<User>> listUser(String username, String fullname, Integer age, LocalDate start, LocalDate end, Pageable pageable) {
+    public BaseResponse<Page<User>> listUser(String username, String fullName, Integer age, LocalDate start, LocalDate end, Pageable pageable) {
         try {
-            Page<User> users = userRepository.filter(username, fullname, age, start, end, pageable);
+            Page<User> users = userRepository.filter(username, fullName, age, start, end, pageable);
             return BaseResponse.makeSuccessResponse(users);
         } catch (Exception e) {
             return BaseResponse.makeInternalServerError(e.getMessage());

@@ -38,7 +38,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             SELECT u.* FROM user u
             JOIN profile p ON u.id = p.user_id
             WHERE (:username IS NULL OR u.username LIKE %:username%)
-            AND (:fullname IS NULL OR LOWER(CONCAT(p.first_name, ' ', p.last_name)) LIKE LOWER(CONCAT('%',:fullname,'%')))
+            AND (:fullName IS NULL OR LOWER(CONCAT(p.last_name, ' ', p.first_name)) LIKE LOWER(CONCAT('%',:fullName,'%')))
             AND (:age IS NULL OR p.age = :age)
             AND (:start IS NULL OR p.birth_of_date >= :start)
             AND (:end IS NULL OR p.birth_of_date <= :end)
@@ -53,7 +53,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                     AND (:end IS NULL OR p.birth_of_date <= :end)
                     """,
             nativeQuery = true)
-    Page<User> filter(String username, String fullname, Integer age, LocalDate start, LocalDate end, Pageable pageable);
+    Page<User> filter(String username, String fullName, Integer age, LocalDate start, LocalDate end, Pageable pageable);
 
 
 }

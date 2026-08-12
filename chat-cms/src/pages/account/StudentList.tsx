@@ -1,283 +1,500 @@
-import {ChevronDown, Edit, Eye, Plus, Search, Trash2} from 'lucide-react';
-import { useState } from 'react';
-import StudentModal from './StudentModal.tsx';
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Eye, LoaderCircle, Plus, Search, UserRound, X } from 'lucide-react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { userService, type ReportUser, type UserDetail, type UserListParams } from '../../services/userService';
+import StudentModal from './StudentModal';
 
-export interface Student {
-  id: number;
-  code: string;
-  name: string;
-  email: string;
-  phone: string;
-  department: string;
-  className: string;
-  status: 'ACTIVE' | 'LOCKED';
+interface UserFilters {
+  username: string;
+  fullName: string;
+  start: string;
+  end: string;
 }
 
-const studentsData: Student[] = [
-  {
-    id: 1,
-    code: '20210001',
-    name: 'Nguyễn Văn An',
-    email: 'an.nguyen@hust.edu.vn',
-    phone: '0988888888',
-    department: 'Công nghệ thông tin',
-    className: 'IT1-K66',
-    status: 'ACTIVE',
-  },
-  {
-    id: 2,
-    code: '20210002',
-    name: 'Trần Minh Đức',
-    email: 'duc.tran@hust.edu.vn',
-    phone: '0977777777',
-    department: 'Điện tử viễn thông',
-    className: 'DT2-K66',
-    status: 'LOCKED',
-  },
-  {
-    id: 3,
-    code: '20210003',
-    name: 'Phạm Minh Tuấn',
-    email: 'tuan.pham@hust.edu.vn',
-    phone: '0966666666',
-    department: 'Cơ khí',
-    className: 'CK1-K66',
-    status: 'ACTIVE',
-  },
-];
+type StudentModalState =
+    | {
+  type: 'create';
+  student: null;
+}
+    | {
+  type: 'detail';
+  student: UserDetail;
+}
+    | null;
 
-type ModalType = 'create' | 'edit' | 'detail' | 'delete' | null;
+const initialFilters: UserFilters = {
+  username: '',
+  fullName: '',
+  start: '',
+  end: '',
+};
 
 export default function StudentList() {
-  const [students] = useState<Student[]>(studentsData);
+  const [students, setStudents] = useState<ReportUser[]>([]);
+  const [filters, setFilters] = useState<UserFilters>(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<UserFilters>(initialFilters);
+  const [modal, setModal] = useState<StudentModalState>(null);
 
-  const [keyword, setKeyword] = useState('');
-  const [studentCode, setStudentCode] = useState('');
-  const [studentName, setStudentName] = useState('');
-  const [status, setStatus] = useState('ALL');
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const [numberOfElements, setNumberOfElements] = useState(0);
 
-  const [modal, setModal] = useState<ModalType>(null);
-  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [detailLoadingUsername, setDetailLoadingUsername] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
-  const handleSearch = () => {
-    const params: Record<string, string> = {};
+  useEffect(() => {
+    let cancelled = false;
 
-    if (keyword.trim()) {
-      params.keyword = keyword.trim();
+    const params: UserListParams = {
+      page,
+      size: pageSize,
+      sort: 'id,desc',
+    };
+
+    if (appliedFilters.username.trim()) {
+      params.username = appliedFilters.username.trim();
     }
 
-    if (studentCode.trim()) {
-      params.studentCode = studentCode.trim();
+    if (appliedFilters.fullName.trim()) {
+      params.fullName = appliedFilters.fullName.trim();
     }
 
-    if (studentName.trim()) {
-      params.studentName = studentName.trim();
+    if (appliedFilters.start) {
+      params.start = formatDateForApi(appliedFilters.start);
     }
 
-    if (status !== 'ALL') {
-      params.status = status;
+    if (appliedFilters.end) {
+      params.end = formatDateForApi(appliedFilters.end);
     }
 
-    console.log('Student search params:', params);
+    userService
+        .getUsers(params)
+        .then((data) => {
+          if (cancelled) return;
 
-    // TODO:
-    // Sau này gọi API tại đây.
-    //
-    // Ví dụ:
-    //
-    // const response =
-    //   await studentService.getStudents(params);
-    //
-    // GET /students
-    //   ?keyword=
-    //   &studentCode=
-    //   &studentName=
-    //   &status=
-    //
-    // Field nào không có value thì không gửi.
+          setStudents(data.content);
+          setTotalPages(data.totalPages);
+          setTotalElements(data.totalElements);
+          setNumberOfElements(data.numberOfElements);
+          setError('');
+        })
+        .catch((error: unknown) => {
+          if (cancelled) return;
+
+          console.error('Không thể tải danh sách sinh viên:', error);
+          setStudents([]);
+          setTotalPages(0);
+          setTotalElements(0);
+          setNumberOfElements(0);
+          setError('Không thể tải danh sách sinh viên. Vui lòng thử lại.');
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appliedFilters, page, pageSize, reloadKey]);
+
+  const visiblePages = useMemo(() => {
+    if (totalPages <= 0) return [];
+
+    const maxVisiblePages = 5;
+    let startPage = Math.max(0, page - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(totalPages - 1, startPage + maxVisiblePages - 1);
+
+    startPage = Math.max(0, endPage - maxVisiblePages + 1);
+
+    return Array.from(
+        { length: endPage - startPage + 1 },
+        (_, index) => startPage + index,
+    );
+  }, [page, totalPages]);
+
+  const hasFilter =
+      filters.username.trim() !== '' ||
+      filters.fullName.trim() !== '' ||
+      filters.start !== '' ||
+      filters.end !== '';
+
+  const updateFilter = (field: keyof UserFilters, value: string) => {
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      [field]: value,
+    }));
   };
 
-  const openModal = (type: ModalType, student?: Student) => {
-    setModal(type);
-    setSelectedStudent(student ?? null);
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (filters.start && filters.end && filters.start > filters.end) {
+      setError('Ngày bắt đầu không được lớn hơn ngày kết thúc.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setPage(0);
+    setAppliedFilters({
+      username: filters.username.trim(),
+      fullName: filters.fullName.trim(),
+      start: filters.start,
+      end: filters.end,
+    });
   };
 
-  const closeModal = () => {
-    setModal(null);
-    setSelectedStudent(null);
+  const handleClearFilters = () => {
+    setLoading(true);
+    setError('');
+    setFilters(initialFilters);
+    setAppliedFilters(initialFilters);
+    setPage(0);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage === page || newPage < 0 || newPage >= totalPages) return;
+
+    setLoading(true);
+    setPage(newPage);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setLoading(true);
+    setPageSize(newPageSize);
+    setPage(0);
+  };
+
+  const handleViewDetail = async (username: string) => {
+    setDetailLoadingUsername(username);
+    setError('');
+
+    try {
+      const student = await userService.getUserByUsername(username);
+      setModal({
+        type: 'detail',
+        student,
+      });
+    } catch (error) {
+      console.error('Không thể tải chi tiết sinh viên:', error);
+      setError('Không thể tải thông tin chi tiết sinh viên.');
+    } finally {
+      setDetailLoadingUsername(null);
+    }
+  };
+
+  const handleUserCreated = () => {
+    setLoading(true);
+    setPage(0);
+    setReloadKey((currentKey) => currentKey + 1);
   };
 
   return (
-    <div className="space-y-6">
-      {/* HEADER */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quản lý sinh viên</h1>
-
-          <p className="mt-2 text-gray-500">Quản lý tài khoản sinh viên trong hệ thống HUST Assistant</p>
-        </div>
-
-        <button type="button" onClick={() => openModal('create')} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-red-700 px-5 py-3 font-semibold text-white shadow-lg shadow-red-700/20 transition hover:bg-red-800">
-          <Plus size={20} />
-          Thêm sinh viên
-        </button>
-      </div>
-
-      {/* SEARCH */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        {/* FILTERS */}
-        <div className="grid grid-cols-4 gap-5">
-          {/* KEYWORD */}
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-600">Tìm kiếm tổng</label>
-
-            <div className="relative">
-              <Search size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-
-              <input
-                  type="text"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSearch();
-                    }
-                  }}
-                  placeholder="MSSV, tên, email..."
-                  className="h-12 w-full rounded-xl border border-gray-100 bg-white pl-11 pr-4 text-sm text-gray-700 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100"
-              />
-            </div>
+            <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Danh sách sinh viên</h1>
+            <p className="mt-2 text-sm text-gray-500">Quản lý tài khoản sinh viên trong hệ thống HUST Assistant</p>
           </div>
 
-          {/* STUDENT CODE */}
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-600">MSSV</label>
-
-            <input
-                type="text"
-                value={studentCode}
-                onChange={(e) => setStudentCode(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearch();
-                  }
-                }}
-                placeholder="Tìm theo MSSV"
-                className="h-12 w-full rounded-xl border border-gray-100 bg-white px-4 text-sm text-gray-700 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100"
-            />
-          </div>
-
-          {/* STUDENT NAME */}
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-600">Tên sinh viên</label>
-
-            <input
-                type="text"
-                value={studentName}
-                onChange={(e) => setStudentName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSearch();
-                  }
-                }}
-                placeholder="Tìm theo tên sinh viên"
-                className="h-12 w-full rounded-xl border border-gray-100 bg-white px-4 text-sm text-gray-700 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100"
-            />
-          </div>
-
-          {/* STATUS */}
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-600">Trạng thái</label>
-
-            <div className="relative">
-              <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-12 w-full appearance-none rounded-xl border border-gray-100 bg-white px-4 pr-10 text-sm text-gray-700 shadow-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100">
-                <option value="ALL">Tất cả trạng thái</option>
-                <option value="ACTIVE">Đang hoạt động</option>
-                <option value="LOCKED">Đã khóa</option>
-              </select>
-
-              <ChevronDown
-                  size={18}
-                  className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* SEARCH BUTTON */}
-        <div className="mt-5 flex justify-end border-t border-gray-100 pt-5">
-          <button type="button" onClick={handleSearch} className="inline-flex h-12 min-w-[180px] items-center justify-center gap-2 rounded-xl bg-red-700 px-7 font-semibold text-white shadow-sm transition hover:bg-red-800">
-            <Search size={18} />
-            Tìm kiếm
+          <button type="button" onClick={() => setModal({ type: 'create', student: null })} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#b5091b] px-5 text-sm font-semibold text-white transition hover:bg-[#960716]">
+            <Plus size={18} />
+            Thêm sinh viên
           </button>
         </div>
-      </div>
 
-      {/* TABLE */}
-      <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-            <tr>
-              <th className="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-500">MSSV</th>
-              <th className="w-[27%] px-6 py-4 text-left text-sm font-semibold text-gray-500">Sinh viên</th>
-              <th className="w-[25%] px-6 py-4 text-left text-sm font-semibold text-gray-500">Khoa</th>
-              <th className="w-[15%] px-6 py-4 text-left text-sm font-semibold text-gray-500">Trạng thái</th>
-              <th className="w-[18%] px-6 py-4 text-center text-sm font-semibold text-gray-500">Thao tác</th>
-            </tr>
-            </thead>
+        <form onSubmit={handleSearch} className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <FilterInput
+                label="Tên đăng nhập"
+                value={filters.username}
+                placeholder="Nhập email hoặc username..."
+                onChange={(value) => updateFilter('username', value)}
+            />
 
-            <tbody>
-            {students.map((student) => (
-                <tr key={student.id} className="border-t border-gray-100 transition hover:bg-gray-50">
-                  {/* MSSV */}
-                  <td className="px-6 py-5 font-semibold text-gray-900">{student.code}</td>
+            <FilterInput
+                label="Họ và tên"
+                value={filters.fullName}
+                placeholder="Nhập họ và tên..."
+                onChange={(value) => updateFilter('fullName', value)}
+            />
 
-                  {/* STUDENT */}
-                  <td className="px-6 py-5">
-                    <p className="font-semibold text-gray-900">{student.name}</p>
-                    <p className="mt-1 truncate text-sm text-gray-400">{student.email}</p>
-                  </td>
+            <DateFilterInput
+                label="Ngày sinh từ"
+                value={filters.start}
+                onChange={(value) => updateFilter('start', value)}
+            />
 
-                  {/* DEPARTMENT */}
-                  <td className="px-6 py-5 text-gray-600">{student.department}</td>
+            <DateFilterInput
+                label="Ngày sinh đến"
+                value={filters.end}
+                onChange={(value) => updateFilter('end', value)}
+            />
+          </div>
 
-                  {/* STATUS */}
-                  <td className="px-6 py-5">
-                    <StatusBadge status={student.status} />
-                  </td>
+          <div className="mt-5 flex flex-wrap justify-end gap-3">
+            {hasFilter && (
+                <button type="button" onClick={handleClearFilters} disabled={loading} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-50">
+                  <X size={17} />
+                  Xóa bộ lọc
+                </button>
+            )}
 
-                  {/* ACTION */}
-                  <td className="px-6 py-5">
-                    <div className="flex items-center justify-center gap-2 whitespace-nowrap">
-                      <button type="button" onClick={() => openModal('detail', student)} title="Xem chi tiết" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition hover:bg-blue-100">
-                        <Eye size={18} />
-                      </button>
+            <button type="submit" disabled={loading} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#b5091b] px-6 text-sm font-semibold text-white transition hover:bg-[#960716] disabled:cursor-not-allowed disabled:opacity-60">
+              {loading ? <LoaderCircle size={18} className="animate-spin" /> : <Search size={18} />}
+              Tìm kiếm
+            </button>
+          </div>
+        </form>
 
-                      <button type="button" onClick={() => openModal('edit', student)} title="Chỉnh sửa" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-600 transition hover:bg-orange-100">
-                        <Edit size={18} />
-                      </button>
+        {error && <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
-                      <button type="button" onClick={() => openModal('delete', student)} title="Xóa sinh viên" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 transition hover:bg-red-100">
-                        <Trash2 size={18} />
-                      </button>
+        <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full">
+              <thead>
+              <tr className="bg-gray-50/70">
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Sinh viên</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Tên đăng nhập</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Ngày sinh</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-500">Tuổi</th>
+                <th className="px-6 py-4 text-right text-sm font-semibold text-gray-500">Thao tác</th>
+              </tr>
+              </thead>
+
+              <tbody>
+              {!loading &&
+                  students.map((student) => {
+                    const fullName = getFullName(student);
+
+                    return (
+                        <tr key={student.id} className="border-t border-gray-100 transition hover:bg-red-50/40">
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-sm font-bold text-red-700">{getInitials(student)}</div>
+
+                              <div>
+                                <p className="font-semibold text-gray-900">{fullName}</p>
+                                <p className="mt-1 text-xs text-gray-400">ID: {student.id}</p>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="px-6 py-5 text-sm text-gray-700">{student.username}</td>
+                          <td className="px-6 py-5 text-sm text-gray-700">{student.profile?.birthOfDate || '—'}</td>
+                          <td className="px-6 py-5 text-sm text-gray-700">{student.profile?.age ?? '—'}</td>
+
+                          <td className="px-6 py-5 text-right">
+                            <button
+                                type="button"
+                                onClick={() => void handleViewDetail(student.username)}
+                                disabled={detailLoadingUsername === student.username}
+                                className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {detailLoadingUsername === student.username ? <LoaderCircle size={16} className="animate-spin" /> : <Eye size={16} />}
+                              Chi tiết
+                            </button>
+                          </td>
+                        </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+
+          {!loading && students.length > 0 && (
+              <div className="space-y-4 p-4 md:hidden">
+                {students.map((student) => (
+                    <div key={student.id} className="rounded-2xl border border-gray-100 p-5">
+                      <div className="flex justify-between gap-4">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-sm font-bold text-red-700">{getInitials(student)}</div>
+
+                          <div className="min-w-0">
+                            <h3 className="font-bold text-gray-900">{getFullName(student)}</h3>
+                            <p className="mt-1 break-all text-sm text-gray-500">{student.username}</p>
+                          </div>
+                        </div>
+
+                        <button type="button" onClick={() => void handleViewDetail(student.username)} disabled={detailLoadingUsername === student.username} className="h-fit shrink-0 rounded-xl bg-red-50 p-3 text-red-700 disabled:opacity-60">
+                          {detailLoadingUsername === student.username ? <LoaderCircle size={18} className="animate-spin" /> : <Eye size={18} />}
+                        </button>
+                      </div>
+
+                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        <InfoCard label="Ngày sinh" value={student.profile?.birthOfDate || '—'} />
+                        <InfoCard label="Tuổi" value={student.profile?.age == null ? '—' : String(student.profile.age)} />
+                      </div>
                     </div>
-                  </td>
-                </tr>
-            ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                ))}
+              </div>
+          )}
 
-      {/* MODAL */}
-      {modal && <StudentModal type={modal} student={selectedStudent} close={closeModal} />}
-    </div>
+          {loading && (
+              <div className="flex min-h-72 flex-col items-center justify-center gap-3 text-gray-500">
+                <LoaderCircle size={30} className="animate-spin text-red-700" />
+                <p className="text-sm">Đang tải danh sách sinh viên...</p>
+              </div>
+          )}
+
+          {!loading && !error && students.length === 0 && (
+              <div className="flex min-h-72 flex-col items-center justify-center gap-3 px-4 text-center text-gray-500">
+                <UserRound size={32} className="text-gray-300" />
+                <p className="text-sm">Không tìm thấy sinh viên phù hợp.</p>
+              </div>
+          )}
+
+          {!loading && totalElements > 0 && (
+              <div className="flex flex-col gap-4 border-t border-gray-100 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-5 text-sm text-gray-500">
+              <span>
+                Trang <strong className="font-semibold text-gray-700">{page + 1}/{totalPages}</strong> · Hiển thị{' '}
+                <strong className="font-semibold text-gray-700">{numberOfElements}/{totalElements.toLocaleString('vi-VN')}</strong> sinh viên
+              </span>
+
+                  <label className="flex items-center gap-3">
+                    <span>Số dòng:</span>
+
+                    <div className="relative">
+                      <select value={pageSize} onChange={(event) => handlePageSizeChange(Number(event.target.value))} className="h-11 appearance-none rounded-xl border border-gray-200 bg-white pl-4 pr-10 font-semibold text-gray-700 outline-none focus:border-red-300 focus:ring-2 focus:ring-red-100">
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+
+                      <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    </div>
+                  </label>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button type="button" onClick={() => handlePageChange(page - 1)} disabled={page === 0} className="inline-flex h-11 items-center gap-2 rounded-xl border border-gray-200 px-4 text-sm font-semibold text-gray-700 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-white">
+                    <ChevronLeft size={17} />
+                    Trước
+                  </button>
+
+                  {visiblePages.map((pageNumber) => (
+                      <button
+                          type="button"
+                          key={pageNumber}
+                          onClick={() => handlePageChange(pageNumber)}
+                          className={`h-11 min-w-11 rounded-xl border px-3 text-sm font-semibold transition ${
+                              page === pageNumber
+                                  ? 'border-[#b5091b] bg-[#b5091b] text-white'
+                                  : 'border-gray-200 bg-white text-gray-700 hover:border-red-200 hover:bg-red-50 hover:text-red-700'
+                          }`}
+                      >
+                        {pageNumber + 1}
+                      </button>
+                  ))}
+
+                  <button type="button" onClick={() => handlePageChange(page + 1)} disabled={page >= totalPages - 1} className="inline-flex h-11 items-center gap-2 rounded-xl border border-gray-200 px-4 text-sm font-semibold text-gray-700 transition hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:text-gray-300 disabled:hover:bg-white">
+                    Sau
+                    <ChevronRight size={17} />
+                  </button>
+                </div>
+              </div>
+          )}
+        </div>
+
+        {modal && (
+            <StudentModal
+                type={modal.type}
+                student={modal.student}
+                close={() => setModal(null)}
+                onCreated={handleUserCreated}
+            />
+        )}
+      </div>
   );
 }
 
-function StatusBadge({ status }: { status: Student['status'] }) {
-  const isActive = status === 'ACTIVE';
+function FilterInput({
+                       label,
+                       value,
+                       placeholder,
+                       onChange,
+                     }: {
+  label: string;
+  value: string;
+  placeholder: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+      <label className="block">
+        <span className="mb-2 block text-sm font-semibold text-gray-700">{label}</span>
 
-  return <span className={`inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${isActive ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>{isActive ? 'Hoạt động' : 'Đã khóa'}</span>;
+        <div className="flex h-12 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 transition focus-within:border-red-300 focus-within:ring-2 focus-within:ring-red-100">
+          <Search size={17} className="shrink-0 text-gray-400" />
+
+          <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="w-full bg-transparent text-sm text-gray-700 placeholder:text-gray-400 outline-none" />
+
+          {value && (
+              <button type="button" onClick={() => onChange('')} className="shrink-0 text-gray-400 transition hover:text-gray-700">
+                <X size={16} />
+              </button>
+          )}
+        </div>
+      </label>
+  );
+}
+
+function DateFilterInput({
+                           label,
+                           value,
+                           onChange,
+                         }: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+      <label className="block">
+        <span className="mb-2 block text-sm font-semibold text-gray-700">{label}</span>
+
+        <div className="flex h-12 items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 transition focus-within:border-red-300 focus-within:ring-2 focus-within:ring-red-100">
+          <CalendarDays size={17} className="shrink-0 text-gray-400" />
+
+          <input type="date" value={value} onChange={(event) => onChange(event.target.value)} className="w-full bg-transparent text-sm text-gray-700 outline-none" />
+        </div>
+      </label>
+  );
+}
+
+function InfoCard({ label, value }: { label: string; value: string }) {
+  return (
+      <div className="rounded-xl bg-gray-50 p-3">
+        <p className="text-xs text-gray-400">{label}</p>
+        <p className="mt-1 break-words font-bold text-gray-800">{value}</p>
+      </div>
+  );
+}
+
+function getFullName(student: ReportUser) {
+  if (!student.profile) return 'Chưa cập nhật';
+
+  return `${student.profile.lastName || ''} ${student.profile.firstName || ''}`.trim() || 'Chưa cập nhật';
+}
+
+function getInitials(student: ReportUser) {
+  if (!student.profile) return 'SV';
+
+  const lastName = student.profile.lastName?.trim();
+  const firstName = student.profile.firstName?.trim();
+
+  return `${lastName?.charAt(0) || ''}${firstName?.charAt(0) || ''}`.toUpperCase() || 'SV';
+}
+
+function formatDateForApi(value: string) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!match) return value;
+
+  return `${match[3]}/${match[2]}/${match[1]}`;
 }

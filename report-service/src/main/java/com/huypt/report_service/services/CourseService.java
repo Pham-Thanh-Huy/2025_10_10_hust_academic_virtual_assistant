@@ -27,19 +27,6 @@ public class CourseService {
     }
 
 
-    public BaseResponse<Course> getDetailCourse(Integer id) {
-        try {
-            Course course = courseRepository.findById(id).orElse(null);
-            if (ObjectUtils.isEmpty(course)) {
-                return BaseResponse.makeBadRequestResponse("Không tồn tại course với id này");
-            }
-
-            return BaseResponse.makeSuccessResponse(course);
-        } catch (Exception e) {
-            log.error("[ERROR-WHEN-DETAIL-COURSE] {}", e.getMessage());
-            return BaseResponse.makeInternalServerError(e.getMessage());
-        }
-    }
 
 
 }
