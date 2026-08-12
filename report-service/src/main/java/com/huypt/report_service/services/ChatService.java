@@ -3,6 +3,8 @@ package com.huypt.report_service.services;
 
 import com.huypt.report_service.dtos.BaseResponse;
 import com.huypt.report_service.dtos.responses.ChatResponse;
+import com.huypt.report_service.entities.mongo.ChatMessage;
+import com.huypt.report_service.entities.mongo.ChatSession;
 import com.huypt.report_service.repositories.mongo.ChatMessageRepository;
 import com.huypt.report_service.repositories.mongo.ChatSessionRepository;
 import lombok.RequiredArgsConstructor;
@@ -112,9 +114,37 @@ public class ChatService {
 
             return BaseResponse.makeSuccessResponse(responses);
         } catch (Exception e) {
-            log.error("[ERROR-WHEN-LIST-CHAT] ", e);
+            log.error("[ERROR-WHEN-REPORT-LIST-CHAT] ", e);
             return BaseResponse.makeInternalServerError(e.getMessage());
         }
     }
+
+    public BaseResponse<ChatResponse> getDetail(String id){
+        try{
+            ChatMessage chatMessage = chatMessageRepository.findById(id).orElse(null);
+            if(ObjectUtils.isEmpty(chatMessage)){
+               return BaseResponse.makeBadRequestResponse("Không tồn tại đoạn chat với id này");
+            }
+            ChatSession chatSession = chatSessionRepository.findById(chatMessage.getSessionId()).orElseThrow(()
+                    -> new RuntimeException("Có lỗi khi lấy phiên chat tương ứng với đoạn chat này, vui lòng check lại DB"));
+
+            ChatResponse chatResponse = ChatResponse.builder()
+                    .id(chatMessage.getId())
+                    .sessionId(chatMessage.getSessionId())
+                    .model(chatMessage.getModel())
+                    .message(chatMessage.getMessage())
+                    .answer(chatMessage.getAnswer())
+                    .title(chatSession.getTitle())
+                    .status(chatSession.getStatus())
+                    .username(chatSession.getUsername())
+                    .build();
+            return BaseResponse.makeSuccessResponse(chatResponse);
+        } catch (Exception e) {
+            log.error("[ERROR-WHEN-REPORT-DETAIL-CHAT] ", e);
+            return BaseResponse.makeInternalServerError(e.getMessage());
+        }
+    }
+
+
 
 }

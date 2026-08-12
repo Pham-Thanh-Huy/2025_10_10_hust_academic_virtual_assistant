@@ -17,9 +17,9 @@ public interface CourseRepository extends JpaRepository<Course, Integer> {
     @Query("""
             SELECT c
             FROM Course c
-            WHERE (:code IS NULL OR c.code = :code)
-            AND (:name IS NULL OR c.name = :name)
-            AND (:englishName IS NULL OR c.englishName = :englishName)
+            WHERE (:code IS NULL OR c.code LIKE %:code%)
+            AND (:name IS NULL OR c.name LIKE %:name%)
+            AND (:englishName IS NULL OR c.englishName LIKE %:englishName%)
             """)
     Page<Course> filter(String code, String name, String englishName, Pageable pageable);
 
