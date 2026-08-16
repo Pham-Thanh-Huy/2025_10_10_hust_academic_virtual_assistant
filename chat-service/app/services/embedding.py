@@ -1,104 +1,183 @@
 from app.config.chroma_config import init_chroma_db
 from app.config.mysql_config import init_mysql_db
-from app.utils.constants import Constant
 from app.utils.open_ai_util import init_open_ai, embedding_open_ai
 
 client = init_open_ai()
 
+
 """
-    28/11/2025
-    GET course in db, check exist, embedding and save vector db!
+    Lấy các khóa học chưa đồng bộ, embedding và lưu vào ChromaDB.
+    Sau khi từng batch được lưu thành công, cập nhật is_sync = 1.
 """
 def process_course():
-    result = get_course()
+    mydb = None
+    cursor = None
 
-    texts = combine_text(result)
-    metadatas = get_metadata(result)
+    try:
+        mydb = init_mysql_db()
+        cursor = mydb.cursor(dictionary=True)
 
-    # ---- Embedding ----
-    data = embedding_course_batch(texts)
-    embeddings = [dt.embedding for dt in data]
+        courses = get_course(cursor)
 
-    course_collection, client = init_chroma_db()
+        if not courses:
+            return {
+                "data": {
+                    "total": 0
+                },
+                "status": {
+                    "message": "Không có học phần nào cần đồng bộ!",
+                    "code": 200
+                }
+            }
 
-    # ---- batch embedding (chromadb cannot save ? 5464 token ) ----
-    max_batch_size = 100
+        course_collection, _ = init_chroma_db()
 
-    ids_list = [str(r.get("id")) for r in result]
+        max_batch_size = 100
+        total_synced = 0
 
-    total = len(result)
-    for start_idx in range(0, total, max_batch_size):
-        end_idx = min(start_idx + max_batch_size, total)
+        for start_idx in range(0, len(courses), max_batch_size):
+            end_idx = min(start_idx + max_batch_size, len(courses))
+            courses_chunk = courses[start_idx:end_idx]
 
-        ids_chunk = ids_list[start_idx:end_idx]
-        texts_chunk = texts[start_idx:end_idx]
-        embeddings_chunk = embeddings[start_idx:end_idx]
-        metadatas_chunk = metadatas[start_idx:end_idx]
+            ids_chunk = [str(course["id"]) for course in courses_chunk]
+            mysql_ids_chunk = [course["id"] for course in courses_chunk]
 
-        course_collection.add(
-            ids=ids_chunk,
-            documents=texts_chunk,
-            embeddings=embeddings_chunk,
-            metadatas=metadatas_chunk,
-        )
+            texts_chunk = combine_text(courses_chunk)
+            metadatas_chunk = get_metadata(courses_chunk)
 
-    return {
-        "data": None,
-        "status": {
-            "message": "Success!",
-            "code": 200
+            embedding_data = embedding_course_batch(texts_chunk)
+            embeddings_chunk = [item.embedding for item in embedding_data]
+
+            course_collection.upsert(
+                ids=ids_chunk,
+                documents=texts_chunk,
+                embeddings=embeddings_chunk,
+                metadatas=metadatas_chunk
+            )
+
+            update_course_sync_status(
+                cursor=cursor,
+                mydb=mydb,
+                course_ids=mysql_ids_chunk
+            )
+
+            total_synced += len(courses_chunk)
+
+        return {
+            "data": {
+                "total": total_synced
+            },
+            "status": {
+                "message": f"Đồng bộ thành công {total_synced} học phần!",
+                "code": 200
+            }
         }
-    }
 
-def get_course():
-    mydb = init_mysql_db()
-    cursor = mydb.cursor(dictionary=True)
+    except Exception as exception:
+        if mydb is not None:
+            mydb.rollback()
 
-    cursor.execute("SELECT * FROM course")
-    result = cursor.fetchall()
-    return result
+        return {
+            "data": None,
+            "status": {
+                "message": f"Đồng bộ học phần thất bại: {str(exception)}",
+                "code": 500
+            }
+        }
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if mydb is not None and mydb.is_connected():
+            mydb.close()
+
 
 """
-    Input: course (a dictionary has get in mysql db)
-    Output: combine_text
+    Lấy các khóa học chưa được đồng bộ vào ChromaDB.
+"""
+def get_course(cursor):
+    cursor.execute("""
+        SELECT *
+        FROM course
+        WHERE is_sync = 0
+        ORDER BY id ASC
+    """)
+
+    return cursor.fetchall()
+
+
+"""
+    Cập nhật is_sync = 1 cho các khóa học đã lưu thành công vào ChromaDB.
+"""
+def update_course_sync_status(cursor, mydb, course_ids):
+    if not course_ids:
+        return
+
+    placeholders = ", ".join(["%s"] * len(course_ids))
+
+    sql = f"""
+        UPDATE course
+        SET is_sync = 1
+        WHERE id IN ({placeholders})
+    """
+
+    cursor.execute(sql, tuple(course_ids))
+    mydb.commit()
+
+
+"""
+    Kết hợp thông tin khóa học thành văn bản để embedding.
 """
 def combine_text(courses):
-    combine_texts = [(f"Name: {course['name']} - English_name: {course['english_name']} - Course_code: {course['code']} "
-                      f"- Duration: {course['duration']} - Institute_manage: {course['institute_manage']} - Credits: {course['credits']} "
-                      f"- Credit_fee: {course['credit_fee']} - List_course_condtion: {course['list_course_condtion']} - Weight: {course['weight']}")
-                     for course in courses]
-    return combine_texts
+    return [
+        (
+            f"Name: {course.get('name') or ''} "
+            f"- English_name: {course.get('english_name') or ''} "
+            f"- Course_code: {course.get('code') or ''} "
+            f"- Duration: {course.get('duration') or ''} "
+            f"- Institute_manage: {course.get('institute_manage') or ''} "
+            f"- Credits: {course.get('credits') or ''} "
+            f"- Credit_fee: {course.get('credit_fee') or ''} "
+            f"- List_course_condition: {course.get('list_course_condtion') or ''} "
+            f"- Weight: {course.get('weight') or ''}"
+        )
+        for course in courses
+    ]
+
 
 """
-    Input: text will embedding (text can be an array or list)
-    Ouput: list data has metadata (object, index, embedding[])
+    Embedding danh sách văn bản theo từng batch.
 """
 def embedding_course_batch(all_texts, chunk_size=100):
-    """
-        Generate multiple embedded text segments, automatically segmenting to avoid too many tokens
-    """
     all_embeddings = []
 
-    for i in range(0, len(all_texts), chunk_size):
-        chunk = all_texts[i:i + chunk_size]
-        embeddings = embedding_open_ai(chunk)
+    for start_idx in range(0, len(all_texts), chunk_size):
+        end_idx = min(start_idx + chunk_size, len(all_texts))
+        texts_chunk = all_texts[start_idx:end_idx]
+
+        embeddings = embedding_open_ai(texts_chunk)
         all_embeddings.extend(embeddings)
+
     return all_embeddings
 
+
 """
-    Input: course (a dictionary has get in mysql db)
-    Output: list metadata
+    Tạo metadata cho ChromaDB.
+    ChromaDB không nhận giá trị None nên chuyển None thành chuỗi rỗng.
 """
 def get_metadata(courses):
-    metadatas = [{
-        "name": course.get("name"),
-        "english_name": course.get("english_name"),
-        "code": course.get("code"),
-        "duration": course.get("duration"),
-        "institute_manage": course.get("institute_manage"),
-        "credits": course.get("credits"),
-        "credit_fee": course.get("credit_fee"),
-        "list_course_condition": course.get("list_course_condtion"),
-        "weight": course.get("weight")
-    } for course in courses]
-    return metadatas
+    return [
+        {
+            "name": course.get("name") or "",
+            "english_name": course.get("english_name") or "",
+            "code": course.get("code") or "",
+            "duration": course.get("duration") or "",
+            "institute_manage": course.get("institute_manage") or "",
+            "credits": course.get("credits") or "",
+            "credit_fee": course.get("credit_fee") or "",
+            "list_course_condition": course.get("list_course_condtion") or "",
+            "weight": course.get("weight") or ""
+        }
+        for course in courses
+    ]
