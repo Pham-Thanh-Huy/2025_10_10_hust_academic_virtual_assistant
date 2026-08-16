@@ -14,6 +14,7 @@ export interface Course {
     weight: string | null;
     listCourseCondition: string | null;
     instituteManage: string | null;
+    isSync: boolean | null;
 }
 
 export interface CoursePage {

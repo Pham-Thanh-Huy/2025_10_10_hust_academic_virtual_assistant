@@ -40,6 +40,9 @@ public class Course {
     @Column(name = "instituteManage")
     private String instituteManage; // Viện quản lý
 
+    @Column(name = "is_sync", nullable = false)
+    private Boolean isSync = false;
+
 
     // Custom equals not check id
     @Override
