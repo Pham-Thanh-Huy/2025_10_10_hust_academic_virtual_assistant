@@ -15,7 +15,7 @@ import ChatHistoryList from "./pages/chat-history/ChatHistoryList.tsx";
 function App() {
     return (
         <>
-            <BrowserRouter>
+            <BrowserRouter basename="/admin">
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route element={<ProtectedRoute />}>
