@@ -49,6 +49,9 @@ public class Course {
     )
     private String instituteManage; // Viện quản lý
 
+    @Column(name = "is_sync", nullable = false)
+    private Boolean isSync = false;
+
     // Custom equals không kiểm tra id
     @Override
     public boolean equals(Object o) {
