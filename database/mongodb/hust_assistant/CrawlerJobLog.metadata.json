@@ -1,0 +1,1 @@
+{"indexes":[{"v":{"$numberInt":"2"},"key":{"_id":{"$numberInt":"1"}},"name":"_id_"}],"uuid":"c8b2c776e2714bfd9e6dec859a22876b","collectionName":"CrawlerJobLog","type":"collection"}
