@@ -266,7 +266,7 @@ export const useChatController = ({
         optimisticMessageAdded = true;
 
         sendSocketMessage({
-          model: "gpt-4o-mini",
+          model: "gpt-5-mini",
           question: currentMessage,
           sessionId: activeSessionId,
         });
