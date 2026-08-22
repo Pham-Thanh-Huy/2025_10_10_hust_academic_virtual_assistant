@@ -31,9 +31,9 @@ type UseChatControllerResult = {
 };
 
 export const useChatController = ({
-  sessionId,
-  navigate,
-}: UseChatControllerOptions): UseChatControllerResult => {
+                                    sessionId,
+                                    navigate,
+                                  }: UseChatControllerOptions): UseChatControllerResult => {
   const [listMessage, setListMessage] = useState<Message[]>([]);
   const [disableSendMessage, setDisableSendMessage] = useState(false);
   const [sessionRefresh, setSessionRefresh] = useState(0);
@@ -67,18 +67,18 @@ export const useChatController = ({
     const loadVersion = ++routeLoadVersionRef.current;
 
     void fetchMessages(sessionId)
-      .then((messages) => {
-        if (
-          loadVersion === routeLoadVersionRef.current &&
-          currentSessionIdRef.current === sessionId
-        ) {
-          setListMessage(messages);
-        }
-      })
-      .catch((error) => {
-        console.error("Load messages error", error);
-        showErrorMessage("Không thể tải danh sách tin nhắn.");
-      });
+        .then((messages) => {
+          if (
+              loadVersion === routeLoadVersionRef.current &&
+              currentSessionIdRef.current === sessionId
+          ) {
+            setListMessage(messages);
+          }
+        })
+        .catch((error) => {
+          console.error("Load messages error", error);
+          showErrorMessage("Không thể tải danh sách tin nhắn.");
+        });
   }, [navigate, sessionId]);
 
   const handleChunk = useCallback((chunk: string) => {
@@ -108,7 +108,7 @@ export const useChatController = ({
 
   const handleDone = useCallback(async () => {
     const request = activeChatRequestRef.current;
-    const isNewSession = pendingSessionIdRef.current != null;
+    const isNewSession = pendingSessionIdRef.current !== null;
 
     if (!request) {
       console.error("Không tìm thấy request đang chờ sau sự kiện done");
@@ -139,9 +139,9 @@ export const useChatController = ({
 
     try {
       const persistedMessages = await waitForPersistedMessage(
-        request,
-        () =>
-          activeChatRequestRef.current?.requestKey === request.requestKey,
+          request,
+          () =>
+              activeChatRequestRef.current?.requestKey === request.requestKey,
       );
 
       if (currentSessionIdRef.current === request.sessionId) {
@@ -158,8 +158,9 @@ export const useChatController = ({
       }
     } catch (error) {
       console.error("Refresh messages after done error", error);
+
       showErrorMessage(
-        "Câu trả lời đã hoàn thành nhưng máy chủ chưa trả về ID tin nhắn.",
+          "Câu trả lời đã hoàn thành nhưng máy chủ chưa trả về ID tin nhắn.",
       );
     } finally {
       if (activeChatRequestRef.current?.requestKey === request.requestKey) {
@@ -180,79 +181,41 @@ export const useChatController = ({
   }, []);
 
   const sendMessage = useCallback(
-    async (rawMessage: string) => {
-      if (!checkIsLoginUtil()) {
-        setDisableSendMessage(true);
-        showErrorMessage(
-          "Vui lòng login để sử dụng tính năng hỏi đáp học phần!",
-        );
+      async (rawMessage: string) => {
+        if (!checkIsLoginUtil()) {
+          setDisableSendMessage(true);
 
-        window.setTimeout(() => {
-          setDisableSendMessage(false);
-        }, 3000);
+          showErrorMessage(
+              "Vui lòng login để sử dụng tính năng hỏi đáp học phần!",
+          );
 
-        return;
-      }
+          window.setTimeout(() => {
+            setDisableSendMessage(false);
+          }, 3000);
 
-      const currentMessage = rawMessage.trim();
-
-      if (!currentMessage || disableSendMessage) {
-        return;
-      }
-
-      setDisableSendMessage(true);
-
-      const firstMessage = !sessionId;
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        showErrorMessage("Vui lòng login lại");
-        setDisableSendMessage(false);
-        return;
-      }
-
-      let optimisticMessageAdded = false;
-
-      try {
-        let activeSessionId: string;
-        let baselineMessages: Message[];
-
-        if (firstMessage) {
-          const initializedSessionId = await initSession(token, currentMessage);
-
-          if (!initializedSessionId) {
-            throw new Error("Không tạo được session");
-          }
-
-          activeSessionId = initializedSessionId;
-          baselineMessages = [];
-          pendingSessionIdRef.current = activeSessionId;
-        } else {
-          if (!sessionId) {
-            throw new Error("Không tìm thấy session id hiện tại");
-          }
-
-          activeSessionId = sessionId;
-          baselineMessages = await fetchMessages(activeSessionId);
-          setListMessage(baselineMessages);
+          return;
         }
 
-        const request: ActiveChatRequest = {
-          requestKey: ++requestKeyRef.current,
-          sessionId: activeSessionId,
-          question: currentMessage,
-          baselineIds: new Set(
-            baselineMessages
-              .map((message) => message.id)
-              .filter(
-                (messageId): messageId is string => Boolean(messageId),
-              ),
-          ),
-        };
+        const currentMessage = rawMessage.trim();
 
-        activeChatRequestRef.current = request;
-        currentSessionIdRef.current = activeSessionId;
+        if (!currentMessage || disableSendMessage) {
+          return;
+        }
 
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          showErrorMessage("Vui lòng login lại");
+          setDisableSendMessage(false);
+          return;
+        }
+
+        setDisableSendMessage(true);
+
+        /*
+         * Hiển thị ngay câu hỏi và ba dấu chấm.
+         * Không chờ initSession hoặc fetchMessages hoàn thành.
+         */
         setListMessage((previousMessages) => [
           ...previousMessages,
           {
@@ -263,27 +226,84 @@ export const useChatController = ({
             started: true,
           },
         ]);
-        optimisticMessageAdded = true;
 
-        sendSocketMessage({
-          model: "gpt-5-mini",
-          question: currentMessage,
-          sessionId: activeSessionId,
-        });
-      } catch (error) {
-        console.error("Send message error", error);
-        pendingSessionIdRef.current = null;
-        activeChatRequestRef.current = null;
+        let optimisticMessageAdded = true;
 
-        if (optimisticMessageAdded) {
-          rollbackOptimisticMessage();
+        try {
+          const firstMessage = !sessionId;
+
+          let activeSessionId: string;
+          let baselineMessages: Message[];
+
+          if (firstMessage) {
+            const initializedSessionId = await initSession(
+                token,
+                currentMessage,
+            );
+
+            if (!initializedSessionId) {
+              throw new Error("Không tạo được session");
+            }
+
+            activeSessionId = initializedSessionId;
+            baselineMessages = [];
+            pendingSessionIdRef.current = activeSessionId;
+          } else {
+            if (!sessionId) {
+              throw new Error("Không tìm thấy session id hiện tại");
+            }
+
+            activeSessionId = sessionId;
+            baselineMessages = await fetchMessages(activeSessionId);
+
+            /*
+             * Không gọi setListMessage(baselineMessages) tại đây
+             * vì thao tác đó sẽ làm bong bóng chờ đang hiển thị bị mất.
+             */
+          }
+
+          const request: ActiveChatRequest = {
+            requestKey: ++requestKeyRef.current,
+            sessionId: activeSessionId,
+            question: currentMessage,
+            baselineIds: new Set(
+                baselineMessages
+                    .map((message) => message.id)
+                    .filter(
+                        (messageId): messageId is string => Boolean(messageId),
+                    ),
+            ),
+          };
+
+          activeChatRequestRef.current = request;
+          currentSessionIdRef.current = activeSessionId;
+
+          sendSocketMessage({
+            model: "gpt-5-mini",
+            question: currentMessage,
+            sessionId: activeSessionId,
+          });
+        } catch (error) {
+          console.error("Send message error", error);
+
+          pendingSessionIdRef.current = null;
+          activeChatRequestRef.current = null;
+
+          if (optimisticMessageAdded) {
+            rollbackOptimisticMessage();
+            optimisticMessageAdded = false;
+          }
+
+          showErrorMessage("Không thể gửi tin nhắn. Vui lòng thử lại.");
+          setDisableSendMessage(false);
         }
-
-        showErrorMessage("Không thể gửi tin nhắn. Vui lòng thử lại.");
-        setDisableSendMessage(false);
-      }
-    },
-    [disableSendMessage, rollbackOptimisticMessage, sendSocketMessage, sessionId],
+      },
+      [
+        disableSendMessage,
+        rollbackOptimisticMessage,
+        sendSocketMessage,
+        sessionId,
+      ],
   );
 
   return {
